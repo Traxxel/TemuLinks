@@ -9,20 +9,20 @@ Beim Klick auf Speichern im Browser-Plugin soll dieser Datensatz an die WebAPI g
 1. Eine C#-WebAPI, welche per Entity Framework Core mit einer MySQL-Datenbank zusammenarbeitet --> Web>API
 2. Ein c# .net 8 DAL-Projekt, welches die Klassen für den Code-First im Entity Framework verwaltet und auf welches von allen Apps zugegriffen wird. --> DAL
 3. Mehrere Browser-Plugins (zuerst nur Chrome, später MS Edge), welche mit der API sprechen. --> Plugins/Chrome
-4. Ein Blazor-Webanwendung, in welcher sich Benutzer registrieren können, einen API-Key generieren und diesen in das Browser-Plugin eintragen können zur Authentifizierung. --> Web
+4. Ein Blazor-Webanwendung, in welcher sich Benutzer registrieren und anmelden können. --> Web
 
 ## Detailbeschreibung
 
 4. Anmelden / Registrieren
 
 4.1 Registrieren / Anmelden
-Der Anwender kann die Startseite aufrufen und soll sich unter Verwendung seines MS-Accounts registrieren können. Danach kann er sich aber noch nicht anmelden.
+Der Anwender kann die Startseite aufrufen und sich mit Benutzername und Passwort registrieren. Die Anmeldedaten werden in der lokalen Datenbank gespeichert.
 
 4.2 Benutzerrollen / Useraccounts
 Es gibt 2 Benutzerrollen: Admin und User
 Ein Admin kann über eine Benutzerverwaltung die Benutzer einsehen, editieren, aktivieren und sperren.
-Ein Benutzer kann seine Benutzerdaten aktualisieren (Vorname, Nachname).
-Beim Anmelden des allerersten Benutzers wird diesem automatisch die Rolle Admin zugewiesen und er soll automatisch freigeschaltet werden.
+Ein Benutzer kann seine Benutzerdaten aktualisieren (Vorname, Nachname, Passwort).
+Beim Registrieren des allerersten Benutzers wird diesem automatisch die Rolle Admin zugewiesen und er soll automatisch freigeschaltet werden.
 
 4.3 Listen
 Da Temu-Einkauflisten geführt werden sollen sollen diese in der Webanwendung über ein Grid aufrufbar und editierbar sein. Ebenso soll der Anwender sie in der Sichtbarkeit für andere Anwender freigeben dürfen.
@@ -32,7 +32,7 @@ Alle Benutzer können öffentliche Links aller anderen Benutzer in einer gemeins
 
 3. Chrome-Plugin
    3.1 Konfiguration
-   Es soll eine Konfiguration aufrufbar sein, in welcher der API-Endpunkt angegeben werden kann und der API-Schlüssel, welcher über die Webanwendung erzeugt werden kann.
+   Es soll eine Konfiguration aufrufbar sein, in welcher der API-Endpunkt angegeben werden kann und die Anmeldedaten (Benutzername/Passwort) gespeichert werden können.
    Wenn die aktuelle Seite mit https://temu.com beginnt, so soll ein Button speichern drückbar sein, mit welchem dieser Link plus eine optionale Beschreibung und die Freigabe (Checkbox) für andere Benutzer angegeben werden kann.
    Ebenso soll per API die Anzahl der gespeicherten Links aus der API abgeholt und angezeigt werden.
    Das Plugin soll einen Link zur Webanwendung bereitstellen, um die gespeicherten Links anzuzeigen.
@@ -41,9 +41,9 @@ Alle Benutzer können öffentliche Links aller anderen Benutzer in einer gemeins
 
 ### Authentifizierung
 
-- Webanwendung: Microsoft Account (MS-Account) Anmeldung
-- API-Zugriff: API-Key basierte Authentifizierung
-- Der API-Key wird in der Webanwendung generiert und im Browser-Plugin konfiguriert
+- Webanwendung: Normale Anmeldung mit Benutzername und Passwort
+- API-Zugriff: Session-basierte Authentifizierung (JWT Token)
+- Anmeldedaten werden im Browser-Plugin gespeichert (siehe Browser-Speicherung)
 
 ### Datenmodell
 
@@ -52,7 +52,7 @@ Ein Temu-Link enthält:
 - URL (automatisch von der aktuellen Browser-URL)
 - Beschreibung (optional, vom Benutzer eingegeben)
 - Öffentlich/Privat (boolean, Checkbox im Plugin)
-- Benutzer (Verknüpfung über API-Key)
+- Benutzer (Verknüpfung über UserId)
 - Erstellungsdatum (automatisch)
 
 ### Datenbank
@@ -68,6 +68,31 @@ Ein Temu-Link enthält:
 - Funktioniert nur auf https://temu.com
 - Zeigt keine eigene Liste an
 - Bietet Link zur Webanwendung für Listenansicht
+- Speichert Anmeldedaten sicher im Browser (siehe Browser-Speicherung)
+
+### Browser-Speicherung
+
+Für die Speicherung der Anmeldedaten im Browser-Plugin stehen folgende Optionen zur Verfügung:
+
+1. **Chrome Storage API (empfohlen)**
+
+   - `chrome.storage.local` für lokale Speicherung
+   - `chrome.storage.sync` für Synchronisation zwischen Geräten
+   - Verschlüsselte Speicherung möglich
+   - Automatische Bereinigung bei Extension-Deinstallation
+
+2. **Web Storage (localStorage/sessionStorage)**
+
+   - Einfacher zu implementieren
+   - Weniger sicher (nicht verschlüsselt)
+   - Persistiert auch nach Browser-Neustart
+
+3. **IndexedDB**
+   - Erweiterte Speichermöglichkeiten
+   - Asynchrone API
+   - Komplexere Implementierung
+
+**Empfehlung**: Chrome Storage API mit `chrome.storage.local` für maximale Sicherheit und Benutzerfreundlichkeit.
 
 ### API-Endpunkte
 

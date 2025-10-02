@@ -21,8 +21,7 @@ TemuLinks/
 - **Ziel**: Entity Framework Core Modelle und DbContext
 - **Technologien**: .NET 8, Entity Framework Core, MySQL
 - **Entitäten**:
-  - `User` (Id, Email, FirstName, LastName, IsActive, Role, CreatedAt)
-  - `ApiKey` (Id, UserId, Key, CreatedAt, IsActive)
+  - `User` (Id, Username, PasswordHash, FirstName, LastName, IsActive, Role, CreatedAt)
   - `TemuLink` (Id, UserId, Url, Description, IsPublic, CreatedAt)
 
 ### 1.3 WebAPI-Projekt (TemuLinks.WebAPI)
@@ -30,18 +29,18 @@ TemuLinks/
 - **Ziel**: REST API mit Authentifizierung
 - **Technologien**: .NET 8, ASP.NET Core Web API, Entity Framework Core
 - **Features**:
-  - API-Key Authentifizierung
+  - JWT Token Authentifizierung
   - CRUD-Operationen für TemuLinks
   - Swagger/OpenAPI Dokumentation
 
 ### 1.4 Blazor Web App (TemuLinks.Web)
 
 - **Ziel**: Benutzeroberfläche für Verwaltung
-- **Technologien**: .NET 8, Blazor Server, Microsoft Authentication
+- **Technologien**: .NET 8, Blazor Server, ASP.NET Core Identity
 - **Features**:
-  - MS-Account Anmeldung
+  - Benutzername/Passwort Anmeldung
   - Benutzerverwaltung (Admin)
-  - API-Key Generierung
+  - Benutzerregistrierung
   - TemuLink Verwaltung (Grid)
   - Öffentliche Links anzeigen
 
@@ -50,10 +49,11 @@ TemuLinks/
 - **Ziel**: Browser-Plugin für Temu.com
 - **Technologien**: Manifest V3, JavaScript, HTML, CSS
 - **Features**:
-  - Konfiguration (API-Endpoint, API-Key)
+  - Konfiguration (API-Endpoint, Anmeldedaten)
   - Temu.com Erkennung
   - Link speichern Dialog
   - Link zur Webanwendung
+  - Sichere Speicherung der Anmeldedaten
 
 ## Phase 2: Datenbank und DAL
 
@@ -70,9 +70,9 @@ TemuLinks/
 
 2. **Entitäten definieren**
 
-   - User-Klasse mit MS-Account Integration
-   - ApiKey-Klasse für Authentifizierung
+   - User-Klasse mit Username/PasswordHash
    - TemuLink-Klasse für Links
+   - Identity-Integration für Authentifizierung
 
 3. **DbContext erstellen**
    - TemuLinksDbContext
@@ -128,8 +128,8 @@ TemuLinks/
    - GET /api/links/count (Anzahl Links)
 
 2. **Authentication Middleware**
-   - API-Key Validierung
-   - User-Context aus API-Key
+   - JWT Token Validierung
+   - User-Context aus JWT Token
 
 ### 3.3 DTOs und Services
 
@@ -156,9 +156,10 @@ TemuLinks/
    dotnet add reference ../TemuLinks.DAL
    ```
 
-2. **Microsoft Authentication konfigurieren**
-   - Azure AD B2C oder Microsoft Account
+2. **ASP.NET Core Identity konfigurieren**
+   - Identity Services konfigurieren
    - appsettings.json Konfiguration
+   - Password-Hashing implementieren
 
 ### 4.2 Blazor-Komponenten
 
@@ -172,7 +173,7 @@ TemuLinks/
 
    - UserManagement.razor
    - UserEdit.razor
-   - API-Key Verwaltung
+   - Benutzerregistrierung
 
 3. **TemuLink Verwaltung**
    - TemuLinkList.razor (Grid)
@@ -183,7 +184,7 @@ TemuLinks/
 
 1. **API-Client Service**
    - HttpClient für API-Aufrufe
-   - Authentication Header
+   - JWT Token Authentication
    - Error Handling
 
 ## Phase 5: Chrome Extension
@@ -219,14 +220,15 @@ Chrome/
 
 1. **popup.html/popup.js**
 
-   - Konfiguration (API-Endpoint, API-Key)
+   - Konfiguration (API-Endpoint, Anmeldedaten)
    - Link speichern Dialog
    - Status-Anzeige
 
 2. **Options Page**
    - Erweiterte Konfiguration
-   - API-Key Eingabe
+   - Anmeldedaten Eingabe
    - Test-Verbindung
+   - Chrome Storage API Integration
 
 ## Phase 6: Integration und Testing
 
@@ -234,13 +236,13 @@ Chrome/
 
 1. **Chrome Extension → WebAPI**
 
-   - HTTP-Requests
+   - HTTP-Requests mit JWT Token
    - Error Handling
-   - Authentication
+   - Chrome Storage API für Anmeldedaten
 
 2. **Blazor Web → WebAPI**
    - HttpClient Konfiguration
-   - Authentication Flow
+   - JWT Token Authentication Flow
 
 ### 6.2 Testing
 
@@ -295,9 +297,10 @@ Chrome/
 ### Frontend
 
 - **Blazor Server** - Webanwendung
-- **Microsoft Authentication** - Login
+- **ASP.NET Core Identity** - Login
 - **Bootstrap** - UI Framework
 - **JavaScript** - Chrome Extension
+- **Chrome Storage API** - Sichere Datenspeicherung
 
 ### Tools
 
