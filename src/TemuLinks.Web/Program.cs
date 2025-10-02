@@ -50,7 +50,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection(); // Disabled for development
 app.UseStaticFiles();
 app.UseAntiforgery();
 
