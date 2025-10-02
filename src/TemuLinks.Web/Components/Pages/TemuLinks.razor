@@ -1,0 +1,253 @@
+@page "/temulinks"
+@using Microsoft.AspNetCore.Components.Authorization
+@using TemuLinks.Web.Services
+@using TemuLinks.Web.Models
+@using Microsoft.JSInterop
+@inject ITemuLinksApiService ApiService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Meine TemuLinks</PageTitle>
+
+<AuthorizeView>
+    <Authorized>
+        <div class="container-fluid">
+            <div class="row mb-3">
+                <div class="col">
+                    <h2>Meine TemuLinks</h2>
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-primary" @onclick="ShowCreateDialog">
+                        <i class="bi bi-plus"></i> Neuer Link
+                    </button>
+                </div>
+            </div>
+
+            @if (isLoading)
+            {
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Laden...</span>
+                    </div>
+                </div>
+            }
+            else if (links.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>URL</th>
+                                <th>Beschreibung</th>
+                                <th>Öffentlich</th>
+                                <th>Erstellt</th>
+                                <th>Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var link in links)
+                            {
+                                <tr>
+                                    <td>
+                                        <a href="@link.Url" target="_blank" class="text-decoration-none">
+                                            @(link.Url.Length > 50 ? link.Url.Substring(0, 50) + "..." : link.Url)
+                                        </a>
+                                    </td>
+                                    <td>@link.Description</td>
+                                    <td>
+                                        @if (link.IsPublic)
+                                        {
+                                            <span class="badge bg-success">Ja</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Nein</span>
+                                        }
+                                    </td>
+                                    <td>@link.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => EditLink(link)">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteLink(link.Id)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <h4>Keine Links gefunden</h4>
+                    <p>Sie haben noch keine TemuLinks gespeichert. Klicken Sie auf "Neuer Link" um Ihren ersten Link zu erstellen.</p>
+                </div>
+            }
+        </div>
+
+        <!-- Create/Edit Dialog -->
+        @if (showDialog)
+        {
+            <div class="modal show d-block" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">@(editingLink == null ? "Neuer Link" : "Link bearbeiten")</h5>
+                            <button type="button" class="btn-close" @onclick="CloseDialog"></button>
+                        </div>
+                        <div class="modal-body">
+                            <EditForm Model="@linkForm" OnValidSubmit="@SaveLink">
+                                <DataAnnotationsValidator />
+                                <ValidationSummary />
+
+                                <div class="mb-3">
+                                    <label for="url" class="form-label">URL *</label>
+                                    <InputText id="url" class="form-control" @bind-Value="linkForm.Url" />
+                                    <ValidationMessage For="@(() => linkForm.Url)" />
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Beschreibung</label>
+                                    <InputTextArea id="description" class="form-control" rows="3" @bind-Value="linkForm.Description" />
+                                </div>
+
+                                <div class="mb-3 form-check">
+                                    <InputCheckbox id="isPublic" class="form-check-input" @bind-Value="linkForm.IsPublic" />
+                                    <label for="isPublic" class="form-check-label">Öffentlich teilen</label>
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" @onclick="CloseDialog">Abbrechen</button>
+                                    <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                                        @if (isSaving)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-2"></span>
+                                        }
+                                        Speichern
+                                    </button>
+                                </div>
+                            </EditForm>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <div class="container">
+            <div class="alert alert-warning">
+                <h4>Anmeldung erforderlich</h4>
+                <p>Sie müssen sich anmelden, um Ihre TemuLinks zu verwalten.</p>
+                <a href="/login" class="btn btn-primary">Anmelden</a>
+            </div>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private List<TemuLinkDto> links = new();
+    private bool isLoading = true;
+    private bool showDialog = false;
+    private bool isSaving = false;
+    private TemuLinkDto? editingLink = null;
+    private CreateTemuLinkDto linkForm = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLinks();
+    }
+
+    private async Task LoadLinks()
+    {
+        isLoading = true;
+        try
+        {
+            links = await ApiService.GetMyLinksAsync();
+        }
+        catch (Exception ex)
+        {
+            // Fehlerbehandlung
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ShowCreateDialog()
+    {
+        editingLink = null;
+        linkForm = new CreateTemuLinkDto();
+        showDialog = true;
+    }
+
+    private void EditLink(TemuLinkDto link)
+    {
+        editingLink = link;
+        linkForm = new CreateTemuLinkDto
+        {
+            Url = link.Url,
+            Description = link.Description,
+            IsPublic = link.IsPublic
+        };
+        showDialog = true;
+    }
+
+    private void CloseDialog()
+    {
+        showDialog = false;
+        editingLink = null;
+        linkForm = new CreateTemuLinkDto();
+    }
+
+    private async Task SaveLink()
+    {
+        isSaving = true;
+        try
+        {
+            if (editingLink == null)
+            {
+                await ApiService.CreateLinkAsync(linkForm);
+            }
+            else
+            {
+                var updateDto = new UpdateTemuLinkDto
+                {
+                    Description = linkForm.Description,
+                    IsPublic = linkForm.IsPublic
+                };
+                await ApiService.UpdateLinkAsync(editingLink.Id, updateDto);
+            }
+
+            await LoadLinks();
+            CloseDialog();
+        }
+        catch (Exception ex)
+        {
+            // Fehlerbehandlung
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task DeleteLink(int id)
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", "Möchten Sie diesen Link wirklich löschen?"))
+        {
+            try
+            {
+                await ApiService.DeleteLinkAsync(id);
+                await LoadLinks();
+            }
+            catch (Exception ex)
+            {
+                // Fehlerbehandlung
+            }
+        }
+    }
+}

@@ -1,9 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TemuLinks.DAL;
-using TemuLinks.DAL.Entities;
-using System.Security.Cryptography;
-using System.Text;
+using TemuLinks.WebAPI.DTOs;
+using TemuLinks.WebAPI.Services;
 
 namespace TemuLinks.WebAPI.Controllers
 {
@@ -11,72 +8,46 @@ namespace TemuLinks.WebAPI.Controllers
     [Route("api/[controller]")]
     public class ApiKeysController : ControllerBase
     {
-        private readonly TemuLinksDbContext _context;
+        private readonly IApiKeyService _apiKeyService;
 
-        public ApiKeysController(TemuLinksDbContext context)
+        public ApiKeysController(IApiKeyService apiKeyService)
         {
-            _context = context;
+            _apiKeyService = apiKeyService;
         }
 
         // POST: api/apikeys/generate
         [HttpPost("generate")]
-        public async Task<ActionResult<object>> GenerateApiKey([FromBody] GenerateApiKeyRequest request)
+        public async Task<ActionResult<GenerateApiKeyResponse>> GenerateApiKey([FromBody] GenerateApiKeyRequest request)
         {
             if (string.IsNullOrEmpty(request.UserEmail))
             {
                 return BadRequest("User email is required");
             }
 
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == request.UserEmail && u.IsActive);
-
-            if (user == null)
+            try
             {
-                return NotFound("User not found or inactive");
+                var response = await _apiKeyService.GenerateApiKeyAsync(request.UserEmail);
+                return Ok(response);
             }
-
-            // Generate a new API key
-            var apiKey = GenerateSecureApiKey();
-
-            var newApiKey = new ApiKey
+            catch (ArgumentException ex)
             {
-                UserId = user.Id,
-                Key = apiKey,
-                CreatedAt = DateTime.UtcNow,
-                IsActive = true
-            };
-
-            _context.ApiKeys.Add(newApiKey);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { apiKey, userId = user.Id, createdAt = newApiKey.CreatedAt });
+                return NotFound(ex.Message);
+            }
         }
 
         // GET: api/apikeys/user/{email}
         [HttpGet("user/{email}")]
-        public async Task<ActionResult<IEnumerable<object>>> GetUserApiKeys(string email)
+        public async Task<ActionResult<IEnumerable<ApiKeyDto>>> GetUserApiKeys(string email)
         {
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == email && u.IsActive);
-
-            if (user == null)
+            try
             {
-                return NotFound("User not found or inactive");
+                var apiKeys = await _apiKeyService.GetUserApiKeysAsync(email);
+                return Ok(apiKeys);
             }
-
-            var apiKeys = await _context.ApiKeys
-                .Where(k => k.UserId == user.Id)
-                .OrderByDescending(k => k.CreatedAt)
-                .Select(k => new
-                {
-                    k.Id,
-                    k.Key,
-                    k.CreatedAt,
-                    k.IsActive
-                })
-                .ToListAsync();
-
-            return Ok(apiKeys);
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
         }
 
         // DELETE: api/apikeys/{id}
@@ -88,50 +59,19 @@ namespace TemuLinks.WebAPI.Controllers
                 return BadRequest("User email is required");
             }
 
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == request.UserEmail && u.IsActive);
-
-            if (user == null)
+            try
             {
-                return NotFound("User not found or inactive");
+                var deleted = await _apiKeyService.DeleteApiKeyAsync(id, request.UserEmail);
+                if (!deleted)
+                {
+                    return NotFound("API Key not found");
+                }
+                return NoContent();
             }
-
-            var apiKey = await _context.ApiKeys
-                .FirstOrDefaultAsync(k => k.Id == id && k.UserId == user.Id);
-
-            if (apiKey == null)
+            catch (ArgumentException ex)
             {
-                return NotFound("API Key not found");
+                return NotFound(ex.Message);
             }
-
-            _context.ApiKeys.Remove(apiKey);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
         }
-
-        private string GenerateSecureApiKey()
-        {
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-            var random = new Random();
-            var result = new StringBuilder();
-            
-            for (int i = 0; i < 32; i++)
-            {
-                result.Append(chars[random.Next(chars.Length)]);
-            }
-            
-            return result.ToString();
-        }
-    }
-
-    public class GenerateApiKeyRequest
-    {
-        public string UserEmail { get; set; } = string.Empty;
-    }
-
-    public class DeleteApiKeyRequest
-    {
-        public string UserEmail { get; set; } = string.Empty;
     }
 }

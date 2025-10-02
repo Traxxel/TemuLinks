@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TemuLinks.DAL;
 using TemuLinks.DAL.Entities;
+using TemuLinks.WebAPI.DTOs;
+using TemuLinks.WebAPI.Services;
 
 namespace TemuLinks.WebAPI.Controllers
 {
@@ -9,235 +9,91 @@ namespace TemuLinks.WebAPI.Controllers
     [Route("api/[controller]")]
     public class TemuLinksController : ControllerBase
     {
-        private readonly TemuLinksDbContext _context;
+        private readonly ITemuLinkService _temuLinkService;
 
-        public TemuLinksController(TemuLinksDbContext context)
+        public TemuLinksController(ITemuLinkService temuLinkService)
         {
-            _context = context;
+            _temuLinkService = temuLinkService;
         }
 
         // GET: api/temulinks
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TemuLink>>> GetTemuLinks()
+        public async Task<ActionResult<IEnumerable<TemuLinkDto>>> GetTemuLinks()
         {
-            var apiKey = Request.Headers["X-API-Key"].FirstOrDefault();
-            if (string.IsNullOrEmpty(apiKey))
-            {
-                return Unauthorized("API Key is required");
-            }
-
-            var user = await _context.Users
-                .Include(u => u.ApiKeys)
-                .FirstOrDefaultAsync(u => u.ApiKeys.Any(k => k.Key == apiKey && k.IsActive));
-
-            if (user == null)
-            {
-                return Unauthorized("Invalid API Key");
-            }
-
-            var links = await _context.TemuLinks
-                .Where(l => l.UserId == user.Id)
-                .OrderByDescending(l => l.CreatedAt)
-                .ToListAsync();
-
+            var userId = (int)HttpContext.Items["UserId"]!;
+            var links = await _temuLinkService.GetUserLinksAsync(userId);
             return Ok(links);
         }
 
         // GET: api/temulinks/public
         [HttpGet("public")]
-        public async Task<ActionResult<IEnumerable<object>>> GetPublicTemuLinks()
+        public async Task<ActionResult<IEnumerable<TemuLinkDto>>> GetPublicTemuLinks()
         {
-            var publicLinks = await _context.TemuLinks
-                .Include(l => l.User)
-                .Where(l => l.IsPublic)
-                .OrderByDescending(l => l.CreatedAt)
-                .Select(l => new
-                {
-                    l.Id,
-                    l.Url,
-                    l.Description,
-                    l.CreatedAt,
-                    UserName = l.User.FirstName + " " + l.User.LastName
-                })
-                .ToListAsync();
-
+            var publicLinks = await _temuLinkService.GetPublicLinksAsync();
             return Ok(publicLinks);
         }
 
         // GET: api/temulinks/count
         [HttpGet("count")]
-        public async Task<ActionResult<object>> GetTemuLinksCount()
+        public async Task<ActionResult<TemuLinkCountDto>> GetTemuLinksCount()
         {
-            var apiKey = Request.Headers["X-API-Key"].FirstOrDefault();
-            if (string.IsNullOrEmpty(apiKey))
-            {
-                return Unauthorized("API Key is required");
-            }
-
-            var user = await _context.Users
-                .Include(u => u.ApiKeys)
-                .FirstOrDefaultAsync(u => u.ApiKeys.Any(k => k.Key == apiKey && k.IsActive));
-
-            if (user == null)
-            {
-                return Unauthorized("Invalid API Key");
-            }
-
-            var count = await _context.TemuLinks
-                .CountAsync(l => l.UserId == user.Id);
-
-            return Ok(new { count });
+            var userId = (int)HttpContext.Items["UserId"]!;
+            var count = await _temuLinkService.GetUserLinkCountAsync(userId);
+            return Ok(new TemuLinkCountDto { Count = count });
         }
 
         // POST: api/temulinks
         [HttpPost]
-        public async Task<ActionResult<TemuLink>> PostTemuLink(TemuLink temuLink)
+        public async Task<ActionResult<TemuLinkDto>> PostTemuLink(CreateTemuLinkDto createDto)
         {
-            var apiKey = Request.Headers["X-API-Key"].FirstOrDefault();
-            if (string.IsNullOrEmpty(apiKey))
-            {
-                return Unauthorized("API Key is required");
-            }
-
-            var user = await _context.Users
-                .Include(u => u.ApiKeys)
-                .FirstOrDefaultAsync(u => u.ApiKeys.Any(k => k.Key == apiKey && k.IsActive));
-
-            if (user == null)
-            {
-                return Unauthorized("Invalid API Key");
-            }
-
-            temuLink.UserId = user.Id;
-            temuLink.CreatedAt = DateTime.UtcNow;
-
-            _context.TemuLinks.Add(temuLink);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetTemuLink", new { id = temuLink.Id }, temuLink);
+            var userId = (int)HttpContext.Items["UserId"]!;
+            var link = await _temuLinkService.CreateLinkAsync(createDto, userId);
+            return CreatedAtAction("GetTemuLink", new { id = link.Id }, link);
         }
 
         // GET: api/temulinks/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<TemuLink>> GetTemuLink(int id)
+        public async Task<ActionResult<TemuLinkDto>> GetTemuLink(int id)
         {
-            var apiKey = Request.Headers["X-API-Key"].FirstOrDefault();
-            if (string.IsNullOrEmpty(apiKey))
-            {
-                return Unauthorized("API Key is required");
-            }
-
-            var user = await _context.Users
-                .Include(u => u.ApiKeys)
-                .FirstOrDefaultAsync(u => u.ApiKeys.Any(k => k.Key == apiKey && k.IsActive));
-
-            if (user == null)
-            {
-                return Unauthorized("Invalid API Key");
-            }
-
-            var temuLink = await _context.TemuLinks
-                .FirstOrDefaultAsync(l => l.Id == id && l.UserId == user.Id);
-
-            if (temuLink == null)
+            var userId = (int)HttpContext.Items["UserId"]!;
+            var link = await _temuLinkService.GetLinkByIdAsync(id, userId);
+            
+            if (link == null)
             {
                 return NotFound();
             }
 
-            return temuLink;
+            return link;
         }
 
         // PUT: api/temulinks/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutTemuLink(int id, TemuLink temuLink)
+        public async Task<ActionResult<TemuLinkDto>> PutTemuLink(int id, UpdateTemuLinkDto updateDto)
         {
-            var apiKey = Request.Headers["X-API-Key"].FirstOrDefault();
-            if (string.IsNullOrEmpty(apiKey))
-            {
-                return Unauthorized("API Key is required");
-            }
-
-            var user = await _context.Users
-                .Include(u => u.ApiKeys)
-                .FirstOrDefaultAsync(u => u.ApiKeys.Any(k => k.Key == apiKey && k.IsActive));
-
-            if (user == null)
-            {
-                return Unauthorized("Invalid API Key");
-            }
-
-            if (id != temuLink.Id)
-            {
-                return BadRequest();
-            }
-
-            var existingLink = await _context.TemuLinks
-                .FirstOrDefaultAsync(l => l.Id == id && l.UserId == user.Id);
-
-            if (existingLink == null)
+            var userId = (int)HttpContext.Items["UserId"]!;
+            var link = await _temuLinkService.UpdateLinkAsync(id, updateDto, userId);
+            
+            if (link == null)
             {
                 return NotFound();
             }
 
-            existingLink.Url = temuLink.Url;
-            existingLink.Description = temuLink.Description;
-            existingLink.IsPublic = temuLink.IsPublic;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!TemuLinkExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
+            return Ok(link);
         }
 
         // DELETE: api/temulinks/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTemuLink(int id)
         {
-            var apiKey = Request.Headers["X-API-Key"].FirstOrDefault();
-            if (string.IsNullOrEmpty(apiKey))
-            {
-                return Unauthorized("API Key is required");
-            }
-
-            var user = await _context.Users
-                .Include(u => u.ApiKeys)
-                .FirstOrDefaultAsync(u => u.ApiKeys.Any(k => k.Key == apiKey && k.IsActive));
-
-            if (user == null)
-            {
-                return Unauthorized("Invalid API Key");
-            }
-
-            var temuLink = await _context.TemuLinks
-                .FirstOrDefaultAsync(l => l.Id == id && l.UserId == user.Id);
-
-            if (temuLink == null)
+            var userId = (int)HttpContext.Items["UserId"]!;
+            var deleted = await _temuLinkService.DeleteLinkAsync(id, userId);
+            
+            if (!deleted)
             {
                 return NotFound();
             }
 
-            _context.TemuLinks.Remove(temuLink);
-            await _context.SaveChangesAsync();
-
             return NoContent();
-        }
-
-        private bool TemuLinkExists(int id)
-        {
-            return _context.TemuLinks.Any(e => e.Id == id);
         }
     }
 }

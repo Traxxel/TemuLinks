@@ -1,0 +1,214 @@
+@page "/admin"
+@using Microsoft.AspNetCore.Components.Authorization
+@using TemuLinks.DAL
+@using Microsoft.EntityFrameworkCore
+@inject TemuLinksDbContext DbContext
+
+<PageTitle>Administration - TemuLinks</PageTitle>
+
+<AuthorizeView Roles="Admin">
+    <Authorized>
+        <div class="container-fluid">
+            <div class="row mb-3">
+                <div class="col">
+                    <h2>Administration</h2>
+                    <p class="text-muted">Verwalten Sie Benutzer und Systemeinstellungen.</p>
+                </div>
+            </div>
+
+            @if (isLoading)
+            {
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Laden...</span>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- Statistiken -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">@totalUsers</h5>
+                                <p class="card-text">Benutzer</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">@totalLinks</h5>
+                                <p class="card-text">TemuLinks</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">@publicLinks</h5>
+                                <p class="card-text">Öffentliche Links</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">@totalApiKeys</h5>
+                                <p class="card-text">API-Schlüssel</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Benutzerverwaltung -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Benutzerverwaltung</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (users.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>E-Mail</th>
+                                            <th>Name</th>
+                                            <th>Rolle</th>
+                                            <th>Aktiv</th>
+                                            <th>Registriert</th>
+                                            <th>Links</th>
+                                            <th>Aktionen</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var user in users)
+                                        {
+                                            <tr>
+                                                <td>@user.Email</td>
+                                                <td>@user.FirstName @user.LastName</td>
+                                                <td>
+                                                    <span class="badge @(user.Role == "Admin" ? "bg-danger" : "bg-primary")">
+                                                        @user.Role
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    @if (user.IsActive)
+                                                    {
+                                                        <span class="badge bg-success">Ja</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-secondary">Nein</span>
+                                                    }
+                                                </td>
+                                                <td>@user.CreatedAt.ToString("dd.MM.yyyy")</td>
+                                                <td>@user.TemuLinks.Count</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => ToggleUserStatus(user)">
+                                                        @(user.IsActive ? "Deaktivieren" : "Aktivieren")
+                                                    </button>
+                                                    @if (user.Role != "Admin")
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-warning" @onclick="() => ToggleUserRole(user)">
+                                                            @(user.Role == "Admin" ? "Admin entfernen" : "Admin machen")
+                                                        </button>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info">
+                                <h4>Keine Benutzer gefunden</h4>
+                                <p>Es sind keine Benutzer in der Datenbank vorhanden.</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <div class="container">
+            <div class="alert alert-danger">
+                <h4>Zugriff verweigert</h4>
+                <p>Sie haben keine Berechtigung, auf die Administration zuzugreifen.</p>
+                <a href="/" class="btn btn-primary">Zurück zur Startseite</a>
+            </div>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private List<User> users = new();
+    private bool isLoading = true;
+    private int totalUsers = 0;
+    private int totalLinks = 0;
+    private int publicLinks = 0;
+    private int totalApiKeys = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            users = await DbContext.Users
+                .Include(u => u.TemuLinks)
+                .Include(u => u.ApiKeys)
+                .ToListAsync();
+
+            totalUsers = users.Count;
+            totalLinks = users.Sum(u => u.TemuLinks.Count);
+            publicLinks = users.Sum(u => u.TemuLinks.Count(t => t.IsPublic));
+            totalApiKeys = users.Sum(u => u.ApiKeys.Count);
+        }
+        catch (Exception ex)
+        {
+            // Fehlerbehandlung
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ToggleUserStatus(User user)
+    {
+        try
+        {
+            user.IsActive = !user.IsActive;
+            await DbContext.SaveChangesAsync();
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            // Fehlerbehandlung
+        }
+    }
+
+    private async Task ToggleUserRole(User user)
+    {
+        try
+        {
+            user.Role = user.Role == "Admin" ? "User" : "Admin";
+            await DbContext.SaveChangesAsync();
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            // Fehlerbehandlung
+        }
+    }
+}

@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using TemuLinks.DAL;
 using Pomelo.EntityFrameworkCore.MySql;
+using TemuLinks.WebAPI.Services;
+using TemuLinks.WebAPI.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +15,10 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<TemuLinksDbContext>(options =>
     options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"), 
         new MySqlServerVersion(new Version(8, 0, 21))));
+
+// Add Services
+builder.Services.AddScoped<ITemuLinkService, TemuLinkService>();
+builder.Services.AddScoped<IApiKeyService, ApiKeyService>();
 
 // Add CORS
 builder.Services.AddCors(options =>
@@ -36,6 +42,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
+app.UseApiKeyAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

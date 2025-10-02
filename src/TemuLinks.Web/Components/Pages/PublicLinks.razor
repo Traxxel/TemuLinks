@@ -1,0 +1,96 @@
+@page "/public-links"
+@using TemuLinks.Web.Services
+@using TemuLinks.Web.Models
+@inject ITemuLinksApiService ApiService
+
+<PageTitle>Öffentliche TemuLinks</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col">
+            <h2>Öffentliche TemuLinks</h2>
+            <p class="text-muted">Entdecken Sie öffentlich geteilte Temu-Links von anderen Benutzern.</p>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Laden...</span>
+            </div>
+        </div>
+    }
+    else if (links.Any())
+    {
+        <div class="row">
+            @foreach (var link in links)
+            {
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="@link.Url" target="_blank" class="text-decoration-none">
+                                    @(link.Description.Length > 50 ? link.Description.Substring(0, 50) + "..." : link.Description)
+                                </a>
+                            </h5>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    <i class="bi bi-link-45deg"></i>
+                                    @(link.Url.Length > 60 ? link.Url.Substring(0, 60) + "..." : link.Url)
+                                </small>
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="bi bi-person"></i> @link.UserEmail
+                                </small>
+                                <small class="text-muted">
+                                    <i class="bi bi-calendar"></i> @link.CreatedAt.ToString("dd.MM.yyyy")
+                                </small>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <a href="@link.Url" target="_blank" class="btn btn-primary btn-sm">
+                                <i class="bi bi-box-arrow-up-right"></i> Link öffnen
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            <h4>Keine öffentlichen Links gefunden</h4>
+            <p>Es sind derzeit keine öffentlichen TemuLinks verfügbar.</p>
+        </div>
+    }
+</div>
+
+@code {
+    private List<TemuLinkDto> links = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPublicLinks();
+    }
+
+    private async Task LoadPublicLinks()
+    {
+        isLoading = true;
+        try
+        {
+            links = await ApiService.GetPublicLinksAsync();
+        }
+        catch (Exception ex)
+        {
+            // Fehlerbehandlung
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

@@ -1,0 +1,35 @@
+@page "/logout"
+@using Microsoft.AspNetCore.Authentication
+@inject NavigationManager Navigation
+
+<PageTitle>Abmelden - TemuLinks</PageTitle>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3>Sie werden abgemeldet...</h3>
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Laden...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await SignOutAsync();
+        Navigation.NavigateTo("/");
+    }
+
+    private async Task SignOutAsync()
+    {
+        // Hier würde normalerweise der SignOut-Code stehen
+        // Für Microsoft Account Authentication
+        await Task.Delay(1000); // Simulation
+    }
+}

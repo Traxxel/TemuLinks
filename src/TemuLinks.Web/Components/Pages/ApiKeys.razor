@@ -1,0 +1,163 @@
+@page "/api-keys"
+@using Microsoft.AspNetCore.Components.Authorization
+@using TemuLinks.Web.Services
+@using TemuLinks.Web.Models
+@using Microsoft.JSInterop
+@inject ITemuLinksApiService ApiService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>API-Schlüssel</PageTitle>
+
+<AuthorizeView>
+    <Authorized>
+        <div class="container-fluid">
+            <div class="row mb-3">
+                <div class="col">
+                    <h2>Meine API-Schlüssel</h2>
+                    <p class="text-muted">Verwalten Sie Ihre API-Schlüssel für die Chrome-Extension.</p>
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-primary" @onclick="CreateApiKey">
+                        <i class="bi bi-plus"></i> Neuer API-Schlüssel
+                    </button>
+                </div>
+            </div>
+
+            @if (isLoading)
+            {
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Laden...</span>
+                    </div>
+                </div>
+            }
+            else if (apiKeys.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>API-Schlüssel</th>
+                                <th>Status</th>
+                                <th>Erstellt</th>
+                                <th>Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var key in apiKeys)
+                            {
+                                <tr>
+                                    <td>
+                                        <code class="user-select-all">@key.Key</code>
+                                        <button class="btn btn-sm btn-outline-secondary ms-2" @onclick="() => CopyToClipboard(key.Key)">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </td>
+                                    <td>
+                                        @if (key.IsActive)
+                                        {
+                                            <span class="badge bg-success">Aktiv</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Inaktiv</span>
+                                        }
+                                    </td>
+                                    <td>@key.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteApiKey(key.Id)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="alert alert-info">
+                    <h5><i class="bi bi-info-circle"></i> Verwendung in der Chrome-Extension</h5>
+                    <p>Kopieren Sie einen API-Schlüssel und fügen Sie ihn in der Chrome-Extension unter "Einstellungen" ein.</p>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <h4>Keine API-Schlüssel gefunden</h4>
+                    <p>Sie haben noch keine API-Schlüssel erstellt. Klicken Sie auf "Neuer API-Schlüssel" um Ihren ersten Schlüssel zu erstellen.</p>
+                </div>
+            }
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <div class="container">
+            <div class="alert alert-warning">
+                <h4>Anmeldung erforderlich</h4>
+                <p>Sie müssen sich anmelden, um Ihre API-Schlüssel zu verwalten.</p>
+                <a href="/login" class="btn btn-primary">Anmelden</a>
+            </div>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private List<ApiKeyDto> apiKeys = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadApiKeys();
+    }
+
+    private async Task LoadApiKeys()
+    {
+        isLoading = true;
+        try
+        {
+            apiKeys = await ApiService.GetMyApiKeysAsync();
+        }
+        catch (Exception ex)
+        {
+            // Fehlerbehandlung
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task CreateApiKey()
+    {
+        try
+        {
+            await ApiService.CreateApiKeyAsync();
+            await LoadApiKeys();
+        }
+        catch (Exception ex)
+        {
+            // Fehlerbehandlung
+        }
+    }
+
+    private async Task DeleteApiKey(int id)
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", "Möchten Sie diesen API-Schlüssel wirklich löschen?"))
+        {
+            try
+            {
+                await ApiService.DeleteApiKeyAsync(id);
+                await LoadApiKeys();
+            }
+            catch (Exception ex)
+            {
+                // Fehlerbehandlung
+            }
+        }
+    }
+
+    private async Task CopyToClipboard(string text)
+    {
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", text);
+        // Optional: Toast-Nachricht anzeigen
+    }
+}
