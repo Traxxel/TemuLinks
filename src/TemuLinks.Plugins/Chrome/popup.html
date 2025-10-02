@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body {
+            width: 350px;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, button {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        textarea {
+            height: 60px;
+            resize: vertical;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .config-link {
+            text-align: center;
+            margin-top: 15px;
+        }
+        .config-link a {
+            color: #007bff;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>TemuLinks</h2>
+        <p>Save Temu links to your collection</p>
+    </div>
+
+    <div id="saveForm">
+        <div class="form-group">
+            <label for="description">Description (optional):</label>
+            <textarea id="description" placeholder="Enter a description for this link..."></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="isPublic"> Make this link public
+            </label>
+        </div>
+        
+        <button id="saveButton">Save Link</button>
+    </div>
+
+    <div id="status" class="status" style="display: none;"></div>
+
+    <div class="config-link">
+        <a href="#" id="configLink">Configure API Settings</a>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
