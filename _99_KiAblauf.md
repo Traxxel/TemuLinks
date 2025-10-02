@@ -19,7 +19,7 @@ TemuLinks/
 ### 1.2 DAL-Projekt (TemuLinks.DAL)
 
 - **Ziel**: Entity Framework Core Modelle und DbContext
-- **Technologien**: .NET 8, Entity Framework Core, SQL Server
+- **Technologien**: .NET 8, Entity Framework Core, MySQL
 - **Entitäten**:
   - `User` (Id, Email, FirstName, LastName, IsActive, Role, CreatedAt)
   - `ApiKey` (Id, UserId, Key, CreatedAt, IsActive)
@@ -64,7 +64,7 @@ TemuLinks/
    ```bash
    dotnet new classlib -n TemuLinks.DAL
    cd TemuLinks.DAL
-   dotnet add package Microsoft.EntityFrameworkCore.SqlServer
+   dotnet add package Pomelo.EntityFrameworkCore.MySql
    dotnet add package Microsoft.EntityFrameworkCore.Tools
    ```
 
@@ -86,7 +86,7 @@ TemuLinks/
    ```json
    {
      "ConnectionStrings": {
-       "DefaultConnection": "Server=localhost;Database=temulinks;User Id=sa;Password=geheimgeheim;TrustServerCertificate=true;"
+       "DefaultConnection": "Server=localhost;Port=3306;Database=temulinks;Uid=root;Pwd=Geheim;"
      }
    }
    ```
@@ -111,7 +111,7 @@ TemuLinks/
 
 2. **Dependencies hinzufügen**
    ```bash
-   dotnet add package Microsoft.EntityFrameworkCore.SqlServer
+   dotnet add package Pomelo.EntityFrameworkCore.MySql
    dotnet add package Microsoft.EntityFrameworkCore.Design
    dotnet add package Swashbuckle.AspNetCore
    ```
@@ -260,7 +260,7 @@ Chrome/
 
 1. **Datenbank Setup**
 
-   - SQL Server Installation
+   - MySQL Server Installation
    - Datenbank erstellen
    - Migration ausführen
 
@@ -289,7 +289,7 @@ Chrome/
 - **.NET 8** - Framework
 - **ASP.NET Core Web API** - REST API
 - **Entity Framework Core** - ORM
-- **SQL Server** - Datenbank
+- **MySQL** - Datenbank
 - **Blazor Server** - Web UI
 
 ### Frontend
@@ -302,7 +302,7 @@ Chrome/
 ### Tools
 
 - **Visual Studio 2022** - IDE
-- **SQL Server Management Studio** - Datenbank
+- **MySQL Workbench** - Datenbank
 - **Chrome Developer Tools** - Extension Debugging
 - **Swagger** - API Dokumentation
 

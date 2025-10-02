@@ -6,7 +6,7 @@ Beim Klick auf Speichern im Browser-Plugin soll dieser Datensatz an die WebAPI g
 
 ## Grobe Beschreibung
 
-1. Eine C#-WebAPI, welche per Entity Framework Core mit einer MSSQL-Datenbank zusammenarbeitet --> Web>API
+1. Eine C#-WebAPI, welche per Entity Framework Core mit einer MySQL-Datenbank zusammenarbeitet --> Web>API
 2. Ein c# .net 8 DAL-Projekt, welches die Klassen für den Code-First im Entity Framework verwaltet und auf welches von allen Apps zugegriffen wird. --> DAL
 3. Mehrere Browser-Plugins (zuerst nur Chrome, später MS Edge), welche mit der API sprechen. --> Plugins/Chrome
 4. Ein Blazor-Webanwendung, in welcher sich Benutzer registrieren können, einen API-Key generieren und diesen in das Browser-Plugin eintragen können zur Authentifizierung. --> Web
@@ -57,9 +57,9 @@ Ein Temu-Link enthält:
 
 ### Datenbank
 
-- MSSQL Server lokal (localhost)
-- Benutzername: sa
-- Passwort: Furana68
+- MySQL Server lokal (localhost:3306)
+- Benutzername: root
+- Passwort: Geheim
 - Datenbank: temulinks
 - Konfiguration in appsettings.json
 
