@@ -10,7 +10,7 @@ builder.Services.AddSwaggerGen();
 
 // Add Entity Framework
 builder.Services.AddDbContext<TemuLinksDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add CORS
 builder.Services.AddCors(options =>

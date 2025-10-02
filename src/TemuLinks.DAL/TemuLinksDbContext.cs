@@ -69,7 +69,7 @@ namespace TemuLinks.DAL
                     LastName = "User",
                     IsActive = true,
                     Role = "Admin",
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
                 }
             );
         }

@@ -1,0 +1,15 @@
+/Users/stm/repos/temulinks/src/TemuLinks.DAL/bin/Debug/net8.0/TemuLinks.DAL.deps.json
+/Users/stm/repos/temulinks/src/TemuLinks.DAL/bin/Debug/net8.0/TemuLinks.DAL.runtimeconfig.json
+/Users/stm/repos/temulinks/src/TemuLinks.DAL/bin/Debug/net8.0/TemuLinks.DAL.dll
+/Users/stm/repos/temulinks/src/TemuLinks.DAL/bin/Debug/net8.0/TemuLinks.DAL.pdb
+/Users/stm/repos/temulinks/src/TemuLinks.DAL/obj/Debug/net8.0/TemuLinks.DAL.csproj.AssemblyReference.cache
+/Users/stm/repos/temulinks/src/TemuLinks.DAL/obj/Debug/net8.0/TemuLinks.DAL.GeneratedMSBuildEditorConfig.editorconfig
+/Users/stm/repos/temulinks/src/TemuLinks.DAL/obj/Debug/net8.0/TemuLinks.DAL.AssemblyInfoInputs.cache
+/Users/stm/repos/temulinks/src/TemuLinks.DAL/obj/Debug/net8.0/TemuLinks.DAL.AssemblyInfo.cs
+/Users/stm/repos/temulinks/src/TemuLinks.DAL/obj/Debug/net8.0/TemuLinks.DAL.csproj.CoreCompileInputs.cache
+/Users/stm/repos/temulinks/src/TemuLinks.DAL/obj/Debug/net8.0/TemuLinks.DAL.sourcelink.json
+/Users/stm/repos/temulinks/src/TemuLinks.DAL/obj/Debug/net8.0/TemuLinks.DAL.dll
+/Users/stm/repos/temulinks/src/TemuLinks.DAL/obj/Debug/net8.0/refint/TemuLinks.DAL.dll
+/Users/stm/repos/temulinks/src/TemuLinks.DAL/obj/Debug/net8.0/TemuLinks.DAL.pdb
+/Users/stm/repos/temulinks/src/TemuLinks.DAL/obj/Debug/net8.0/TemuLinks.DAL.genruntimeconfig.cache
+/Users/stm/repos/temulinks/src/TemuLinks.DAL/obj/Debug/net8.0/ref/TemuLinks.DAL.dll

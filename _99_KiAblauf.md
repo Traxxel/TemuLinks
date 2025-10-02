@@ -86,7 +86,7 @@ TemuLinks/
    ```json
    {
      "ConnectionStrings": {
-       "DefaultConnection": "Server=localhost;Database=temulinks;User Id=sa;Password=geheim;TrustServerCertificate=true;"
+       "DefaultConnection": "Server=localhost;Database=temulinks;User Id=sa;Password=geheimgeheim;TrustServerCertificate=true;"
      }
    }
    ```
