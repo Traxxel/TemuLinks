@@ -6,10 +6,10 @@ Beim Klick auf Speichern im Browser-Plugin soll dieser Datensatz an die WebAPI g
 
 ## Grobe Beschreibung
 
-1. Eine C#-WebAPI, welche per Entity Framework Core mit einer MySQL-Datenbank zusammenarbeitet --> Web>API
-2. Ein c# .net 8 DAL-Projekt, welches die Klassen für den Code-First im Entity Framework verwaltet und auf welches von allen Apps zugegriffen wird. --> DAL
+1. Eine C#-WebAPI, welche per Entity Framework Core mit einer MySQL-Datenbank zusammenarbeitet --> WebAPI
+2. Ein c# .NET 8 DAL-Projekt, welches die Klassen für den Code-First im Entity Framework verwaltet und auf welches von allen Apps zugegriffen wird. --> DAL
 3. Mehrere Browser-Plugins (zuerst nur Chrome, später MS Edge), welche mit der API sprechen. --> Plugins/Chrome
-4. Ein Blazor-Webanwendung, in welcher sich Benutzer registrieren und anmelden können. --> Web
+4. Eine Blazor WebAssembly App, in welcher sich Benutzer registrieren und anmelden können. --> WWW
 
 ## Detailbeschreibung
 
@@ -41,8 +41,8 @@ Alle Benutzer können öffentliche Links aller anderen Benutzer in einer gemeins
 
 ### Authentifizierung
 
-- Webanwendung: Normale Anmeldung mit Benutzername und Passwort
-- API-Zugriff: Session-basierte Authentifizierung (JWT Token)
+- Webanwendung (WASM): Clientseitige Demo-Anmeldung (admin/admin) für Prototyp; später echte Anmeldung gegen WebAPI
+- API-Zugriff: Token-basierte Authentifizierung (JWT) geplant
 - Anmeldedaten werden im Browser-Plugin gespeichert (siehe Browser-Speicherung)
 
 ### Datenmodell
@@ -106,5 +106,6 @@ Für die Speicherung der Anmeldedaten im Browser-Plugin stehen folgende Optionen
 ### Deployment
 
 - Zunächst nur lokale Entwicklung
-- Kein Docker
-- Später eigenes Deployment
+- WebAPI: http://localhost:5002 (CORS erlaubt)
+- Blazor WASM: http://localhost:5000
+- Kein Docker (vorerst)

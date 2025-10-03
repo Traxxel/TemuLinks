@@ -9,7 +9,7 @@ TemuLinks/
 ├── src/
 │   ├── TemuLinks.DAL/           # Data Access Layer
 │   ├── TemuLinks.WebAPI/        # Web API
-│   ├── TemuLinks.Web/           # Blazor Web App
+│   ├── TemuLinks.WWW/           # Blazor WebAssembly App
 │   └── TemuLinks.Plugins/
 │       └── Chrome/              # Chrome Extension
 ├── docs/                        # Dokumentation
@@ -33,10 +33,10 @@ TemuLinks/
   - CRUD-Operationen für TemuLinks
   - Swagger/OpenAPI Dokumentation
 
-### 1.4 Blazor Web App (TemuLinks.Web)
+### 1.4 Blazor Web App (TemuLinks.WWW)
 
 - **Ziel**: Benutzeroberfläche für Verwaltung
-- **Technologien**: .NET 8, Blazor Server, ASP.NET Core Identity
+- **Technologien**: .NET 8, Blazor WebAssembly (WASM)
 - **Features**:
   - Benutzername/Passwort Anmeldung
   - Benutzerverwaltung (Admin)
@@ -148,18 +148,18 @@ TemuLinks/
 
 ### 4.1 Blazor-Projekt Setup
 
-1. **Blazor Server App erstellen**
+1. **Blazor WebAssembly App erstellen**
 
-   ```bash
-   dotnet new blazorserver -n TemuLinks.Web
-   cd TemuLinks.Web
-   dotnet add reference ../TemuLinks.DAL
-   ```
+```bash
+dotnet new blazorwasm -n TemuLinks.WWW
+cd TemuLinks.WWW
+```
 
-2. **ASP.NET Core Identity konfigurieren**
-   - Identity Services konfigurieren
-   - appsettings.json Konfiguration
-   - Password-Hashing implementieren
+2. **API-Anbindung & Auth (Clientseite)**
+
+- `HttpClient` Basis-URL zur WebAPI konfigurieren (CORS beachten)
+- Clientseitige Demo-Login-Logik (admin/admin) für Prototyp
+- Später: API-basierte Authentifizierung via JWT
 
 ### 4.2 Blazor-Komponenten
 
@@ -183,9 +183,10 @@ TemuLinks/
 ### 4.3 Services und HttpClient
 
 1. **API-Client Service**
-   - HttpClient für API-Aufrufe
-   - JWT Token Authentication
-   - Error Handling
+
+- `HttpClient` für API-Aufrufe zur WebAPI
+- Später JWT Token Handling (Speicherung in Memory/Storage)
+- Fehlerbehandlung und Retry-Strategie
 
 ## Phase 5: Chrome Extension
 
@@ -240,9 +241,10 @@ Chrome/
    - Error Handling
    - Chrome Storage API für Anmeldedaten
 
-2. **Blazor Web → WebAPI**
-   - HttpClient Konfiguration
-   - JWT Token Authentication Flow
+2. **Blazor WASM → WebAPI**
+
+- `HttpClient` Konfiguration und CORS
+- Später: JWT Token Flow (Login → Token → API Calls)
 
 ### 6.2 Testing
 
@@ -267,9 +269,10 @@ Chrome/
    - Migration ausführen
 
 2. **Anwendung starten**
-   - WebAPI starten
-   - Blazor App starten
-   - Chrome Extension laden
+
+- WebAPI starten (http://localhost:5002)
+- Blazor WebAssembly App starten (http://localhost:5000)
+- Chrome Extension laden
 
 ### 7.2 Dokumentation
 
@@ -292,12 +295,12 @@ Chrome/
 - **ASP.NET Core Web API** - REST API
 - **Entity Framework Core** - ORM
 - **MySQL** - Datenbank
-- **Blazor Server** - Web UI
+- Blazor läuft clientseitig als WebAssembly (separate App)
 
 ### Frontend
 
-- **Blazor Server** - Webanwendung
-- **ASP.NET Core Identity** - Login
+- **Blazor WebAssembly (WASM)** - Webanwendung
+- **Einfache clientseitige Demo-Authentifizierung** (später JWT gegen API)
 - **Bootstrap** - UI Framework
 - **JavaScript** - Chrome Extension
 - **Chrome Storage API** - Sichere Datenspeicherung
