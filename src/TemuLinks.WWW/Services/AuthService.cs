@@ -39,13 +39,14 @@ namespace TemuLinks.WWW.Services
             return true;
         }
 
-        public async Task LogoutAsync()
+        public Task LogoutAsync()
         {
             _isAuthenticated = false;
             _username = null;
             _email = null;
             _jwt = null;
             _httpClient.DefaultRequestHeaders.Remove("Authorization");
+            return Task.CompletedTask;
         }
 
         private class LoginResponse
