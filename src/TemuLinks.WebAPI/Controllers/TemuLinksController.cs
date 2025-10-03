@@ -98,7 +98,11 @@ namespace TemuLinks.WebAPI.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult<TemuLinkDto>> PutTemuLink(int id, UpdateTemuLinkDto updateDto)
         {
-            var userId = (int)HttpContext.Items["UserId"]!;
+            var userId = GetUserId();
+            if (userId <= 0)
+            {
+                return Unauthorized();
+            }
             var link = await _temuLinkService.UpdateLinkAsync(id, updateDto, userId);
             
             if (link == null)
@@ -113,7 +117,11 @@ namespace TemuLinks.WebAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTemuLink(int id)
         {
-            var userId = (int)HttpContext.Items["UserId"]!;
+            var userId = GetUserId();
+            if (userId <= 0)
+            {
+                return Unauthorized();
+            }
             var deleted = await _temuLinkService.DeleteLinkAsync(id, userId);
             
             if (!deleted)
