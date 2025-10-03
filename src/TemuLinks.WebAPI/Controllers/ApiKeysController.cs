@@ -83,10 +83,11 @@ namespace TemuLinks.WebAPI.Controllers
         [HttpGet("me")]
         public async Task<ActionResult<IEnumerable<ApiKeyDto>>> GetMyApiKeys()
         {
-            var email = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
+            var sub = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(ClaimTypes.Name) ?? User.FindFirstValue("sub") ?? string.Empty;
             try
             {
-                var apiKeys = await _apiKeyService.GetUserApiKeysAsync(email);
+                if (!int.TryParse(sub, out var userId)) return Unauthorized();
+                var apiKeys = await _apiKeyService.GetUserApiKeysByUserIdAsync(userId);
                 return Ok(apiKeys);
             }
             catch (ArgumentException ex)
@@ -99,10 +100,11 @@ namespace TemuLinks.WebAPI.Controllers
         [HttpPost("me")]
         public async Task<ActionResult<GenerateApiKeyResponse>> GenerateMyApiKey()
         {
-            var email = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
+            var sub = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(ClaimTypes.Name) ?? User.FindFirstValue("sub") ?? string.Empty;
             try
             {
-                var response = await _apiKeyService.GenerateApiKeyAsync(email);
+                if (!int.TryParse(sub, out var userId)) return Unauthorized();
+                var response = await _apiKeyService.GenerateApiKeyForUserIdAsync(userId);
                 return Ok(response);
             }
             catch (ArgumentException ex)

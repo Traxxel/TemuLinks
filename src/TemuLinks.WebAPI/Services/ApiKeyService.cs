@@ -89,6 +89,27 @@ namespace TemuLinks.WebAPI.Services
             return apiKeys;
         }
 
+        public async Task<IEnumerable<ApiKeyDto>> GetUserApiKeysByUserIdAsync(int userId)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+            if (user == null)
+                throw new ArgumentException("User not found or inactive");
+
+            var apiKeys = await _context.ApiKeys
+                .Where(k => k.UserId == user.Id)
+                .OrderByDescending(k => k.CreatedAt)
+                .Select(k => new ApiKeyDto
+                {
+                    Id = k.Id,
+                    Key = k.Key,
+                    CreatedAt = k.CreatedAt,
+                    IsActive = k.IsActive
+                })
+                .ToListAsync();
+
+            return apiKeys;
+        }
+
         public async Task<bool> DeleteApiKeyAsync(int apiKeyId, string userEmail)
         {
             var user = await _context.Users
@@ -121,6 +142,46 @@ namespace TemuLinks.WebAPI.Services
             }
             
             return result.ToString();
+        }
+
+        public async Task<GenerateApiKeyResponse> GenerateApiKeyForUserIdAsync(int userId)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+            if (user == null)
+                throw new ArgumentException("User not found or inactive");
+
+            using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                var existingKeys = await _context.ApiKeys
+                    .Where(k => k.UserId == user.Id)
+                    .ToListAsync();
+
+                if (existingKeys.Count > 0)
+                {
+                    _context.ApiKeys.RemoveRange(existingKeys);
+                }
+
+                var apiKey = GenerateSecureApiKey();
+
+                var newApiKey = new ApiKey
+                {
+                    UserId = user.Id,
+                    Key = apiKey,
+                    CreatedAt = DateTime.UtcNow,
+                    IsActive = true
+                };
+
+                _context.ApiKeys.Add(newApiKey);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return new GenerateApiKeyResponse
+                {
+                    ApiKey = apiKey,
+                    UserId = user.Id,
+                    CreatedAt = newApiKey.CreatedAt
+                };
+            }
         }
     }
 }

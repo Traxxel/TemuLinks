@@ -4,6 +4,7 @@
 @inject IAuthService AuthService
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
+@inject HttpClient Http
 
 <PageTitle>TemuLinks - Home</PageTitle>
 
@@ -190,9 +191,8 @@ else
 
         try
         {
-            using var http = new HttpClient { BaseAddress = new Uri("http://localhost:5002/") };
             var payload = new { userEmail = $"{AuthService.Username ?? "admin"}@temulinks.local" };
-            var response = await http.PostAsJsonAsync("api/apikeys/generate", payload);
+            var response = await Http.PostAsJsonAsync("api/apikeys/generate", payload);
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadFromJsonAsync<GenerateApiKeyResponse>();

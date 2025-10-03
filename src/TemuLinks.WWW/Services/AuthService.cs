@@ -32,6 +32,10 @@ namespace TemuLinks.WWW.Services
             _jwt = result!.Token;
             _isAuthenticated = true;
             _email = null;
+
+            // Set default Authorization header for all subsequent requests
+            _httpClient.DefaultRequestHeaders.Remove("Authorization");
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_jwt}");
             return true;
         }
 
@@ -41,6 +45,7 @@ namespace TemuLinks.WWW.Services
             _username = null;
             _email = null;
             _jwt = null;
+            _httpClient.DefaultRequestHeaders.Remove("Authorization");
         }
 
         private class LoginResponse

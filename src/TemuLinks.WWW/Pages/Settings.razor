@@ -78,8 +78,6 @@
         // Profil laden
         if (Auth.IsAuthenticated && !string.IsNullOrWhiteSpace(Auth.JwtToken))
         {
-            Http.DefaultRequestHeaders.Remove("Authorization");
-            Http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Auth.JwtToken}");
             var profile = await Http.GetFromJsonAsync<ProfileDto>("api/profile/me");
             if (profile != null)
             {
@@ -98,8 +96,6 @@
         saveMessage = string.Empty;
         try
         {
-            Http.DefaultRequestHeaders.Remove("Authorization");
-            Http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Auth.JwtToken}");
             await Http.PutAsJsonAsync("api/profile/me", new UpdateProfileRequest { FirstName = firstName, LastName = lastName });
             saveMessage = "Gespeichert";
         }
@@ -126,8 +122,6 @@
         apiKeySuccess = string.Empty;
         try
         {
-            Http.DefaultRequestHeaders.Remove("Authorization");
-            Http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Auth.JwtToken}");
             var response = await Http.PostAsync("api/apikeys/me", content: null);
             if (response.IsSuccessStatusCode)
             {

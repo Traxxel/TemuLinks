@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 using TemuLinks.DAL;
 
 namespace TemuLinks.WebAPI.Controllers
@@ -21,13 +22,44 @@ namespace TemuLinks.WebAPI.Controllers
         public record ProfileDto(int Id, string Email, string? FirstName, string? LastName);
         public record UpdateProfileRequest(string? FirstName, string? LastName);
 
-        private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(ClaimTypes.Name) ?? User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
+        private int GetUserId()
+        {
+            // Try common claim types to be robust against inbound claim mapping
+            var idCandidates = new[]
+            {
+                User.FindFirstValue(JwtRegisteredClaimNames.Sub),
+                User.FindFirstValue(ClaimTypes.NameIdentifier),
+                User.FindFirstValue(ClaimTypes.Name)
+            };
+
+            foreach (var candidate in idCandidates)
+            {
+                if (!string.IsNullOrWhiteSpace(candidate) && int.TryParse(candidate, out var parsed))
+                {
+                    return parsed;
+                }
+            }
+
+            return 0;
+        }
 
         [HttpGet("me")]
         public async Task<ActionResult<ProfileDto>> GetMe()
         {
-            var email = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+            var userId = GetUserId();
+            var user = userId > 0
+                ? await _db.Users.FirstOrDefaultAsync(u => u.Id == userId)
+                : null;
+
+            if (user == null)
+            {
+                var email = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
+                if (!string.IsNullOrEmpty(email))
+                {
+                    user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+                }
+            }
+
             if (user == null) return NotFound();
             return new ProfileDto(user.Id, user.Email, user.FirstName, user.LastName);
         }
@@ -35,9 +67,22 @@ namespace TemuLinks.WebAPI.Controllers
         [HttpPut("me")]
         public async Task<IActionResult> UpdateMe([FromBody] UpdateProfileRequest request)
         {
-            var email = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+            var userId = GetUserId();
+            var user = userId > 0
+                ? await _db.Users.FirstOrDefaultAsync(u => u.Id == userId)
+                : null;
+
+            if (user == null)
+            {
+                var email = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
+                if (!string.IsNullOrEmpty(email))
+                {
+                    user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+                }
+            }
+
             if (user == null) return NotFound();
+
             user.FirstName = request.FirstName;
             user.LastName = request.LastName;
             await _db.SaveChangesAsync();
