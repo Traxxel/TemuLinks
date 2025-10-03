@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", function () {
         apiKey: apiKey,
       },
       function () {
-        showStatus("Configuration saved successfully!", "success");
+        showStatus("Die Konfiguration wurde gespeichert", "success");
       }
     );
   }
@@ -51,7 +51,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const apiKey = apiKeyInput.value.trim();
 
     if (!apiEndpoint || !apiKey) {
-      showStatus("Please fill in all fields first", "error");
+      showStatus("Bitte zuerst alle Felder ausfüllen", "error");
       return;
     }
 

@@ -5,7 +5,7 @@ chrome.runtime.onInstalled.addListener(function (details) {
     // Set default configuration
     chrome.storage.sync.set({
       apiEndpoint: "http://localhost:5002",
-      apiKey: "",
+      apiKey: "GpRWMrrnJYGVZERXLLBCNje1kfLjrBBO",
     });
   }
 });
