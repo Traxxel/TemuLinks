@@ -31,25 +31,39 @@ namespace TemuLinks.WebAPI.Services
             if (user == null)
                 throw new ArgumentException("User not found or inactive");
 
-            var apiKey = GenerateSecureApiKey();
-
-            var newApiKey = new ApiKey
+            // Ensure user has only one active API key: remove all existing keys first
+            using (var transaction = await _context.Database.BeginTransactionAsync())
             {
-                UserId = user.Id,
-                Key = apiKey,
-                CreatedAt = DateTime.UtcNow,
-                IsActive = true
-            };
+                var existingKeys = await _context.ApiKeys
+                    .Where(k => k.UserId == user.Id)
+                    .ToListAsync();
 
-            _context.ApiKeys.Add(newApiKey);
-            await _context.SaveChangesAsync();
+                if (existingKeys.Count > 0)
+                {
+                    _context.ApiKeys.RemoveRange(existingKeys);
+                }
 
-            return new GenerateApiKeyResponse
-            {
-                ApiKey = apiKey,
-                UserId = user.Id,
-                CreatedAt = newApiKey.CreatedAt
-            };
+                var apiKey = GenerateSecureApiKey();
+
+                var newApiKey = new ApiKey
+                {
+                    UserId = user.Id,
+                    Key = apiKey,
+                    CreatedAt = DateTime.UtcNow,
+                    IsActive = true
+                };
+
+                _context.ApiKeys.Add(newApiKey);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return new GenerateApiKeyResponse
+                {
+                    ApiKey = apiKey,
+                    UserId = user.Id,
+                    CreatedAt = newApiKey.CreatedAt
+                };
+            }
         }
 
         public async Task<IEnumerable<ApiKeyDto>> GetUserApiKeysAsync(string userEmail)

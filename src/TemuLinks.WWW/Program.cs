@@ -8,9 +8,10 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 // Add HttpClient for API communication
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5002") });
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5002/") });
 
 // Add Authentication Services
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITemuLinksApiClient, TemuLinksApiClient>();
 
 await builder.Build().RunAsync();

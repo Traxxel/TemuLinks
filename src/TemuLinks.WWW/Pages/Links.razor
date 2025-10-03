@@ -1,0 +1,94 @@
+@page "/links"
+@inject TemuLinks.WWW.Services.ITemuLinksApiClient Api
+
+<PageTitle>Meine Links</PageTitle>
+
+<div class="container mt-4">
+    <h3>Meine Links</h3>
+
+    <div class="mb-3">
+        <button class="btn btn-outline-primary me-2" @onclick="LoadCount">Anzahl laden</button>
+        @if (linkCount.HasValue)
+        {
+            <span class="badge bg-secondary">@linkCount.Value Links</span>
+        }
+    </div>
+
+    <EditForm Model="createModel" OnValidSubmit="CreateLink">
+        <DataAnnotationsValidator />
+        <div class="row g-2 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label">URL</label>
+                <InputText class="form-control" @bind-Value="createModel.Url" />
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Beschreibung</label>
+                <InputText class="form-control" @bind-Value="createModel.Description" />
+            </div>
+            <div class="col-md-1 form-check">
+                <InputCheckbox class="form-check-input" @bind-Value="createModel.IsPublic" />
+                <label class="form-check-label">Öffentlich</label>
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-primary">Speichern</button>
+            </div>
+        </div>
+    </EditForm>
+
+    <hr />
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Datum</th>
+                    <th>URL</th>
+                    <th>Beschreibung</th>
+                    <th>Öffentlich</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (links == null)
+                {
+                    <tr><td colspan="4">Noch keine Daten. Klicke auf "Anzahl laden" oder speichere einen Link.</td></tr>
+                }
+                else
+                {
+                    @foreach (var l in links)
+                    {
+                        <tr>
+                            <td>@l.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                            <td><a href="@l.Url" target="_blank">@l.Url</a></td>
+                            <td>@l.Description</td>
+                            <td>@(l.IsPublic ? "Ja" : "Nein")</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private List<TemuLinks.WWW.Models.TemuLinkDto>? links;
+    private int? linkCount;
+    private TemuLinks.WWW.Models.CreateTemuLinkDto createModel = new();
+
+    private async Task LoadCount()
+    {
+        linkCount = await Api.GetLinkCountAsync();
+        links = await Api.GetLinksAsync();
+    }
+
+    private async Task CreateLink()
+    {
+        var created = await Api.CreateLinkAsync(createModel);
+        if (created != null)
+        {
+            createModel = new();
+            await LoadCount();
+        }
+    }
+}
+
+

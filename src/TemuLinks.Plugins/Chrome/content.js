@@ -1,24 +1,24 @@
 // Content script for TemuLinks extension
 // This script runs on Temu.com pages
 
-(function() {
-    'use strict';
+(function () {
+  "use strict";
 
-    // Check if we're on a Temu.com page
-    if (!window.location.hostname.includes('temu.com')) {
-        return;
+  // Check if we're on a Temu.com page (case-insensitive)
+  if (!window.location.hostname.toLowerCase().includes("temu.com")) {
+    return;
+  }
+
+  // Create and inject the TemuLinks button
+  function createTemuLinksButton() {
+    // Check if button already exists
+    if (document.getElementById("temulinks-button")) {
+      return;
     }
 
-    // Create and inject the TemuLinks button
-    function createTemuLinksButton() {
-        // Check if button already exists
-        if (document.getElementById('temulinks-button')) {
-            return;
-        }
-
-        const button = document.createElement('div');
-        button.id = 'temulinks-button';
-        button.innerHTML = `
+    const button = document.createElement("div");
+    button.id = "temulinks-button";
+    button.innerHTML = `
             <div style="
                 position: fixed;
                 top: 20px;
@@ -38,36 +38,35 @@
             </div>
         `;
 
-        button.addEventListener('click', function() {
-            // Open the extension popup
-            chrome.runtime.sendMessage({action: 'openPopup'});
-        });
-
-        document.body.appendChild(button);
-    }
-
-    // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', createTemuLinksButton);
-    } else {
-        createTemuLinksButton();
-    }
-
-    // Re-create button if page content changes (SPA navigation)
-    const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                // Check if our button was removed
-                if (!document.getElementById('temulinks-button')) {
-                    createTemuLinksButton();
-                }
-            }
-        });
+    button.addEventListener("click", function () {
+      // Open the extension popup
+      chrome.runtime.sendMessage({ action: "openPopup" });
     });
 
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true
-    });
+    document.body.appendChild(button);
+  }
 
+  // Initialize when DOM is ready
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", createTemuLinksButton);
+  } else {
+    createTemuLinksButton();
+  }
+
+  // Re-create button if page content changes (SPA navigation)
+  const observer = new MutationObserver(function (mutations) {
+    mutations.forEach(function (mutation) {
+      if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
+        // Check if our button was removed
+        if (!document.getElementById("temulinks-button")) {
+          createTemuLinksButton();
+        }
+      }
+    });
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
 })();
