@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const apiKey = apiKeyInput.value.trim();
 
     if (!apiEndpoint || !apiKey) {
-      showStatus("Please fill in all fields", "error");
+      showStatus("Bitte alle Felder ausfüllen", "error");
       return;
     }
 
@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     try {
       testButton.disabled = true;
-      testButton.textContent = "Testing...";
+      testButton.textContent = "Teste...";
 
       // Normalize base URL (remove trailing slash)
       if (apiEndpoint.endsWith("/")) {
@@ -73,22 +73,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
       if (response.ok) {
         const data = await response.json();
-        const count = data.count ?? data.Count ?? "unknown";
+        const count = data.count ?? data.Count ?? "unbekannt";
         showStatus(
-          `Connection successful! You have ${count} saved links.`,
+          `Verbindung erfolgreich! Du hast ${count} gespeicherte Links.`,
           "success"
         );
       } else {
         showStatus(
-          `Connection failed: ${response.status} ${response.statusText}`,
+          `Verbindung fehlgeschlagen: ${response.status} ${response.statusText}`,
           "error"
         );
       }
     } catch (error) {
-      showStatus(`Connection error: ${error.message}`, "error");
+      showStatus(`Verbindungsfehler: ${error.message}`, "error");
     } finally {
       testButton.disabled = false;
-      testButton.textContent = "Test Connection";
+      testButton.textContent = "Verbindung testen";
     }
   }
 

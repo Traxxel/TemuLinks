@@ -5,16 +5,19 @@ document.addEventListener("DOMContentLoaded", function () {
   const statusDiv = document.getElementById("status");
   const configLink = document.getElementById("configLink");
 
-  // Load current tab URL and show info
+  // Aktiven Tab lesen und Beschreibung vorbelegen
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     const currentTab = tabs[0];
     const url = (currentTab.url || "").toLowerCase();
     const title = currentTab.title || "";
-    document.getElementById("pageUrl").textContent = currentTab.url || "n/a";
-    document.getElementById("pageTitle").textContent = title;
+    // Beschreibung mit dem Tab-Titel vorbelegen
+    const descEl = document.getElementById("description");
+    if (descEl && !descEl.value) {
+      descEl.value = title;
+    }
 
     if (!url.includes("temu.com")) {
-      showStatus("This extension only works on Temu.com", "error");
+      showStatus("Diese Erweiterung funktioniert nur auf Temu.com", "error");
       saveButton.disabled = true;
     }
   });
@@ -23,7 +26,7 @@ document.addEventListener("DOMContentLoaded", function () {
   saveButton.addEventListener("click", async function () {
     try {
       saveButton.disabled = true;
-      saveButton.textContent = "Saving...";
+      saveButton.textContent = "Speichere...";
 
       // Get current tab
       const tabs = await chrome.tabs.query({
@@ -33,7 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const currentTab = tabs[0];
 
       if (!(currentTab.url || "").toLowerCase().includes("temu.com")) {
-        showStatus("This extension only works on Temu.com", "error");
+        showStatus("Diese Erweiterung funktioniert nur auf Temu.com", "error");
         return;
       }
 
@@ -41,7 +44,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const config = await chrome.storage.sync.get(["apiEndpoint", "apiKey"]);
 
       if (!config.apiEndpoint || !config.apiKey) {
-        showStatus("Please configure API settings first", "error");
+        showStatus("Bitte zuerst die API-Einstellungen konfigurieren", "error");
         configLink.click();
         return;
       }
@@ -67,25 +70,25 @@ document.addEventListener("DOMContentLoaded", function () {
       );
 
       if (response.ok) {
-        showStatus("Link saved successfully!", "success");
+        showStatus("Link wurde erfolgreich gespeichert", "success");
         descriptionInput.value = "";
         isPublicCheckbox.checked = false;
       } else {
         const errorData = await response.json();
         showStatus(
-          `Error: ${errorData.message || "Failed to save link"}`,
+          `Fehler: ${errorData.message || "Speichern fehlgeschlagen"}`,
           "error"
         );
       }
     } catch (error) {
-      showStatus(`Error: ${error.message}`, "error");
+      showStatus(`Fehler: ${error.message}`, "error");
     } finally {
       saveButton.disabled = false;
-      saveButton.textContent = "Save Link";
+      saveButton.textContent = "Link speichern";
     }
   });
 
-  // Config link click handler
+  // Klick auf Konfigurations-Link
   configLink.addEventListener("click", function (e) {
     e.preventDefault();
     chrome.runtime.openOptionsPage();
