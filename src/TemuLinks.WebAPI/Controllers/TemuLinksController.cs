@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using TemuLinks.DAL.Entities;
 using TemuLinks.WebAPI.DTOs;
 using TemuLinks.WebAPI.Services;
+using System.Security.Claims;
 
 namespace TemuLinks.WebAPI.Controllers
 {
@@ -16,11 +17,38 @@ namespace TemuLinks.WebAPI.Controllers
             _temuLinkService = temuLinkService;
         }
 
+        private int GetUserId()
+        {
+            // Prefer value from ApiKey middleware
+            if (HttpContext.Items.ContainsKey("UserId") && HttpContext.Items["UserId"] is int fromItem && fromItem > 0)
+            {
+                return fromItem;
+            }
+
+            // Fallback to JWT claims
+            var candidates = new[]
+            {
+                User.FindFirstValue("sub"),
+                User.FindFirstValue(ClaimTypes.NameIdentifier),
+                User.FindFirstValue(ClaimTypes.Name)
+            };
+
+            foreach (var candidate in candidates)
+            {
+                if (!string.IsNullOrWhiteSpace(candidate) && int.TryParse(candidate, out var parsed))
+                {
+                    return parsed;
+                }
+            }
+
+            return 0;
+        }
+
         // GET: api/temulinks
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TemuLinkDto>>> GetTemuLinks()
         {
-            var userId = (int)HttpContext.Items["UserId"]!;
+            var userId = GetUserId();
             var links = await _temuLinkService.GetUserLinksAsync(userId);
             return Ok(links);
         }
@@ -37,7 +65,7 @@ namespace TemuLinks.WebAPI.Controllers
         [HttpGet("count")]
         public async Task<ActionResult<TemuLinkCountDto>> GetTemuLinksCount()
         {
-            var userId = (int)HttpContext.Items["UserId"]!;
+            var userId = GetUserId();
             var count = await _temuLinkService.GetUserLinkCountAsync(userId);
             return Ok(new TemuLinkCountDto { Count = count });
         }
@@ -46,7 +74,7 @@ namespace TemuLinks.WebAPI.Controllers
         [HttpPost]
         public async Task<ActionResult<TemuLinkDto>> PostTemuLink(CreateTemuLinkDto createDto)
         {
-            var userId = (int)HttpContext.Items["UserId"]!;
+            var userId = GetUserId();
             var link = await _temuLinkService.CreateLinkAsync(createDto, userId);
             return CreatedAtAction("GetTemuLink", new { id = link.Id }, link);
         }
@@ -55,7 +83,7 @@ namespace TemuLinks.WebAPI.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<TemuLinkDto>> GetTemuLink(int id)
         {
-            var userId = (int)HttpContext.Items["UserId"]!;
+            var userId = GetUserId();
             var link = await _temuLinkService.GetLinkByIdAsync(id, userId);
             
             if (link == null)
