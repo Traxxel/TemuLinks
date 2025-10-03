@@ -191,8 +191,7 @@ else
 
         try
         {
-            var payload = new { userEmail = $"{AuthService.Username ?? "admin"}@temulinks.local" };
-            var response = await Http.PostAsJsonAsync("api/apikeys/generate", payload);
+            var response = await Http.PostAsync("api/apikeys/me", content: null);
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadFromJsonAsync<GenerateApiKeyResponse>();
