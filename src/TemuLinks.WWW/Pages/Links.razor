@@ -86,10 +86,33 @@
     private int? linkCount;
     private TemuLinks.WWW.Models.CreateTemuLinkDto createModel = new();
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadInitialWithRetry();
+        }
+    }
+
     private async Task LoadCount()
     {
         linkCount = await Api.GetLinkCountAsync();
         links = await Api.GetLinksAsync();
+    }
+
+    private async Task LoadInitialWithRetry()
+    {
+        const int maxAttempts = 5;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            await LoadCount();
+            if (links != null)
+            {
+                break;
+            }
+            await Task.Delay(200);
+        }
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task CreateLink()

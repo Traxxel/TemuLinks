@@ -17,6 +17,7 @@ namespace TemuLinks.WebAPI.Services
         public async Task<IEnumerable<TemuLinkDto>> GetUserLinksAsync(int userId)
         {
             var links = await _context.TemuLinks
+                .Include(l => l.User)
                 .Where(l => l.UserId == userId)
                 .OrderByDescending(l => l.CreatedAt)
                 .Select(l => new TemuLinkDto
@@ -25,7 +26,8 @@ namespace TemuLinks.WebAPI.Services
                     Url = l.Url,
                     Description = l.Description,
                     IsPublic = l.IsPublic,
-                    CreatedAt = l.CreatedAt
+                    CreatedAt = l.CreatedAt,
+                    UserName = (l.User.FirstName ?? "").Trim() + (string.IsNullOrWhiteSpace(l.User.LastName) ? string.Empty : " " + l.User.LastName)
                 })
                 .ToListAsync();
 
