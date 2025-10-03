@@ -73,36 +73,4 @@ app.UseAuthentication();
 app.UseApiKeyAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-
-// Ensure DB is created and seed default admin if empty
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<TemuLinksDbContext>();
-    await db.Database.MigrateAsync();
-
-    var existingAdmin = await db.Users.FirstOrDefaultAsync(u => u.Username == "admin");
-    if (existingAdmin == null)
-    {
-        var admin = new User
-        {
-            Username = "admin",
-            Email = "",
-            PasswordHash = PasswordHasher.HashPassword("admin"),
-            FirstName = "Admin",
-            LastName = "",
-            IsActive = true,
-            Role = "Admin"
-        };
-        db.Users.Add(admin);
-        await db.SaveChangesAsync();
-    }
-    else
-    {
-        existingAdmin.PasswordHash = PasswordHasher.HashPassword("admin");
-        existingAdmin.IsActive = true;
-        if (existingAdmin.Role != "Admin") existingAdmin.Role = "Admin";
-        await db.SaveChangesAsync();
-    }
-}
-
 app.Run();

@@ -69,25 +69,7 @@ namespace TemuLinks.WebAPI.Controllers
             return Ok(new LoginResponse(tokenString));
         }
 
-        // DEV: Simple diagnostic to verify presence/shape of a user
-        [HttpGet("dev-check")]
-        public async Task<IActionResult> DevCheck([FromQuery] string u = "admin")
-        {
-            var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Username == u);
-            if (user == null)
-            {
-                return Ok(new { exists = false });
-            }
-
-            return Ok(new
-            {
-                exists = true,
-                user.Username,
-                user.IsActive,
-                user.Role,
-                passwordHashParts = string.IsNullOrEmpty(user.PasswordHash) ? 0 : user.PasswordHash.Split(':').Length
-            });
-        }
+        
     }
 }
 
