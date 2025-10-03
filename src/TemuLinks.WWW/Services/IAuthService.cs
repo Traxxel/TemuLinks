@@ -6,6 +6,8 @@ namespace TemuLinks.WWW.Services
     {
         bool IsAuthenticated { get; }
         string? Username { get; }
+        string? Email { get; }
+        string? JwtToken { get; }
         Task<bool> LoginAsync(LoginModel loginModel);
         Task LogoutAsync();
     }

@@ -1,8 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using TemuLinks.DAL;
 using Pomelo.EntityFrameworkCore.MySql;
 using TemuLinks.WebAPI.Services;
 using TemuLinks.WebAPI.Middleware;
+using TemuLinks.DAL.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +14,29 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// JWT Auth
+var jwtSection = builder.Configuration.GetSection("Jwt");
+var jwtKey = jwtSection.GetValue<string>("Key") ?? "";
+var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSection.GetValue<string>("Issuer"),
+        ValidAudience = jwtSection.GetValue<string>("Audience"),
+        IssuerSigningKey = new SymmetricSecurityKey(keyBytes)
+    };
+});
 
 // Add Entity Framework
 builder.Services.AddDbContext<TemuLinksDbContext>(options =>
@@ -42,8 +69,40 @@ if (app.Environment.IsDevelopment())
 
 // app.UseHttpsRedirection(); // Disabled for development
 app.UseCors("AllowAll");
+app.UseAuthentication();
 app.UseApiKeyAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// Ensure DB is created and seed default admin if empty
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<TemuLinksDbContext>();
+    await db.Database.MigrateAsync();
+
+    var existingAdmin = await db.Users.FirstOrDefaultAsync(u => u.Username == "admin");
+    if (existingAdmin == null)
+    {
+        var admin = new User
+        {
+            Username = "admin",
+            Email = "",
+            PasswordHash = PasswordHasher.HashPassword("admin"),
+            FirstName = "Admin",
+            LastName = "",
+            IsActive = true,
+            Role = "Admin"
+        };
+        db.Users.Add(admin);
+        await db.SaveChangesAsync();
+    }
+    else
+    {
+        existingAdmin.PasswordHash = PasswordHasher.HashPassword("admin");
+        existingAdmin.IsActive = true;
+        if (existingAdmin.Role != "Admin") existingAdmin.Role = "Admin";
+        await db.SaveChangesAsync();
+    }
+}
 
 app.Run();

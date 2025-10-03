@@ -21,13 +21,16 @@ namespace TemuLinks.DAL
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.Property(e => e.Username).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
+                entity.Property(e => e.PasswordHash).IsRequired().HasMaxLength(255);
                 entity.Property(e => e.FirstName).HasMaxLength(100);
                 entity.Property(e => e.LastName).HasMaxLength(100);
                 entity.Property(e => e.Role).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
                 
                 entity.HasIndex(e => e.Email).IsUnique();
+                entity.HasIndex(e => e.Username).IsUnique();
             });
 
             // ApiKey Configuration
@@ -60,18 +63,7 @@ namespace TemuLinks.DAL
             });
 
             // Seed Data - First Admin User
-            modelBuilder.Entity<User>().HasData(
-                new User
-                {
-                    Id = 1,
-                    Email = "admin@temulinks.local",
-                    FirstName = "Admin",
-                    LastName = "User",
-                    IsActive = true,
-                    Role = "Admin",
-                    CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                }
-            );
+            // Seed per Startup (Program.cs) dynamisch, kein statisches Seeding hier
         }
     }
 }

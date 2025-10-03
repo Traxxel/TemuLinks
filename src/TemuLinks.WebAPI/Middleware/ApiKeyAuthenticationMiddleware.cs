@@ -14,12 +14,21 @@ namespace TemuLinks.WebAPI.Middleware
 
         public async Task InvokeAsync(HttpContext context, IApiKeyService apiKeyService)
         {
+            // If already authenticated via JWT, skip API key validation
+            if (context.User?.Identity?.IsAuthenticated == true)
+            {
+                await _next(context);
+                return;
+            }
+
             // Skip authentication for public endpoints
             if (context.Request.Path.StartsWithSegments("/api/temulinks/public") ||
                 context.Request.Path.StartsWithSegments("/swagger") ||
                 context.Request.Path.StartsWithSegments("/health") ||
                 context.Request.Path.StartsWithSegments("/api/health") ||
-                context.Request.Path.StartsWithSegments("/api/apikeys/generate"))
+                context.Request.Path.StartsWithSegments("/api/apikeys/generate") ||
+                context.Request.Path.StartsWithSegments("/api/auth/dev-check") ||
+                context.Request.Path.StartsWithSegments("/api/auth/login"))
             {
                 await _next(context);
                 return;
@@ -30,7 +39,7 @@ namespace TemuLinks.WebAPI.Middleware
             if (string.IsNullOrEmpty(apiKey))
             {
                 context.Response.StatusCode = 401;
-                await context.Response.WriteAsync("API Key is required");
+                await context.Response.WriteAsync("API Key required");
                 return;
             }
 

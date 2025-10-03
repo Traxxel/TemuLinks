@@ -1,0 +1,190 @@
+@page "/settings"
+@using TemuLinks.WWW.Services
+@inject IJSRuntime JS
+@inject TemuLinks.WWW.Services.IAuthService Auth
+@inject HttpClient Http
+
+<PageTitle>Einstellungen</PageTitle>
+
+<div class="container mt-4">
+    <h3>Einstellungen</h3>
+
+    <EditForm Model="this" OnValidSubmit="SaveProfile">
+        <DataAnnotationsValidator />
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Vorname</label>
+                <InputText class="form-control" @bind-Value="firstName" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Nachname</label>
+                <InputText class="form-control" @bind-Value="lastName" />
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                    @if (isSaving)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    }
+                    Speichern
+                </button>
+                @if (!string.IsNullOrEmpty(saveMessage))
+                {
+                    <span class="ms-2 text-success">@saveMessage</span>
+                }
+            </div>
+        </div>
+    </EditForm>
+
+    <hr />
+
+    <div>
+        <h5>API-Key</h5>
+        <div class="d-flex gap-2 align-items-center">
+            <input class="form-control" style="max-width:420px;" value="@apiKey" readonly />
+            <button class="btn btn-outline-secondary" @onclick="CopyApiKey" disabled="@string.IsNullOrEmpty(apiKey)">Kopieren</button>
+            <button class="btn btn-outline-primary" @onclick="GenerateApiKey" disabled="@isGeneratingKey">
+                @if (isGeneratingKey)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                }
+                Neu erzeugen
+            </button>
+        </div>
+        @if (!string.IsNullOrEmpty(apiKeyError))
+        {
+            <div class="alert alert-danger mt-2" role="alert">@apiKeyError</div>
+        }
+        @if (!string.IsNullOrEmpty(apiKeySuccess))
+        {
+            <div class="alert alert-success mt-2" role="alert">@apiKeySuccess</div>
+        }
+    </div>
+</div>
+
+@code {
+    private string firstName = string.Empty;
+    private string lastName = string.Empty;
+    private bool isSaving = false;
+    private string saveMessage = string.Empty;
+
+    private string apiKey = string.Empty;
+    private bool isGeneratingKey = false;
+    private string apiKeyError = string.Empty;
+    private string apiKeySuccess = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Profil laden
+        if (Auth.IsAuthenticated && !string.IsNullOrWhiteSpace(Auth.JwtToken))
+        {
+            Http.DefaultRequestHeaders.Remove("Authorization");
+            Http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Auth.JwtToken}");
+            var profile = await Http.GetFromJsonAsync<ProfileDto>("api/profile/me");
+            if (profile != null)
+            {
+                firstName = profile.FirstName ?? string.Empty;
+                lastName = profile.LastName ?? string.Empty;
+            }
+
+            var keys = await Http.GetFromJsonAsync<List<ApiKeyDto>>("api/apikeys/me");
+            apiKey = keys?.FirstOrDefault()?.Key ?? string.Empty;
+        }
+    }
+
+    private async Task SaveProfile()
+    {
+        isSaving = true;
+        saveMessage = string.Empty;
+        try
+        {
+            Http.DefaultRequestHeaders.Remove("Authorization");
+            Http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Auth.JwtToken}");
+            await Http.PutAsJsonAsync("api/profile/me", new UpdateProfileRequest { FirstName = firstName, LastName = lastName });
+            saveMessage = "Gespeichert";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task CopyApiKey()
+    {
+        if (!string.IsNullOrEmpty(apiKey))
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", apiKey);
+            apiKeySuccess = "API-Key kopiert";
+            apiKeyError = string.Empty;
+        }
+    }
+
+    private async Task GenerateApiKey()
+    {
+        isGeneratingKey = true;
+        apiKeyError = string.Empty;
+        apiKeySuccess = string.Empty;
+        try
+        {
+            Http.DefaultRequestHeaders.Remove("Authorization");
+            Http.DefaultRequestHeaders.Add("Authorization", $"Bearer {Auth.JwtToken}");
+            var response = await Http.PostAsync("api/apikeys/me", content: null);
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadFromJsonAsync<GenerateApiKeyResponse>();
+                apiKey = json?.ApiKey ?? string.Empty;
+                apiKeySuccess = !string.IsNullOrEmpty(apiKey) ? "Neuer API-Key erzeugt" : string.Empty;
+            }
+            else
+            {
+                if ((int)response.StatusCode == 404)
+                {
+                    apiKeyError = "Benutzer nicht gefunden oder inaktiv. Prüfe die angegebene E-Mail.";
+                }
+                else
+                {
+                    apiKeyError = $"Fehler: {(int)response.StatusCode} {response.ReasonPhrase}";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            apiKeyError = ex.Message;
+        }
+        finally
+        {
+            isGeneratingKey = false;
+        }
+    }
+
+    private class GenerateApiKeyResponse
+    {
+        public string ApiKey { get; set; } = string.Empty;
+        public int UserId { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    private class ProfileDto
+    {
+        public int Id { get; set; }
+        public string Email { get; set; } = string.Empty;
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+    }
+
+    private class ApiKeyDto
+    {
+        public int Id { get; set; }
+        public string Key { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    private class UpdateProfileRequest
+    {
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+    }
+}
+
+

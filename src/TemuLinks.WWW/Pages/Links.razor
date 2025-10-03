@@ -3,7 +3,7 @@
 
 <PageTitle>Meine Links</PageTitle>
 
-<div class="container mt-4">
+<div class="container-fluid mt-4">
     <h3>Meine Links</h3>
 
     <div class="mb-3">
@@ -38,11 +38,12 @@
     <hr />
 
     <div class="table-responsive">
-        <table class="table table-striped">
+        <table class="table table-striped w-100">
             <thead>
                 <tr>
                     <th>Datum</th>
-                    <th>URL</th>
+                    <th>Vorname</th>
+                    <th></th>
                     <th>Beschreibung</th>
                     <th>Öffentlich</th>
                 </tr>
@@ -50,15 +51,26 @@
             <tbody>
                 @if (links == null)
                 {
-                    <tr><td colspan="4">Noch keine Daten. Klicke auf "Anzahl laden" oder speichere einen Link.</td></tr>
+                    <tr><td colspan="5">Noch keine Daten. Klicke auf "Anzahl laden" oder speichere einen Link.</td></tr>
                 }
                 else
                 {
                     @foreach (var l in links)
                     {
                         <tr>
-                            <td>@l.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
-                            <td><a href="@l.Url" target="_blank">@l.Url</a></td>
+                            <td style="white-space:nowrap;">
+                                <div>@l.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy")</div>
+                                <div class="text-muted" style="font-size:0.9em;">@l.CreatedAt.ToLocalTime().ToString("HH:mm")</div>
+                            </td>
+                            <td>@(GetFirstName(l.UserName))</td>
+                            <td>
+                                <a href="@l.Url" target="_blank" title="Webseite öffnen" class="text-decoration-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z"/>
+                                        <path d="M5 5h5V3H3v7h2V5zm0 14v-5H3v7h7v-2H5z"/>
+                                    </svg>
+                                </a>
+                            </td>
                             <td>@l.Description</td>
                             <td>@(l.IsPublic ? "Ja" : "Nein")</td>
                         </tr>
@@ -88,6 +100,13 @@
             createModel = new();
             await LoadCount();
         }
+    }
+
+    private string GetFirstName(string? userName)
+    {
+        if (string.IsNullOrWhiteSpace(userName)) return string.Empty;
+        var parts = userName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length > 0 ? parts[0] : userName.Trim();
     }
 }
 

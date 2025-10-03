@@ -7,6 +7,7 @@ namespace TemuLinks.WWW.Models
         public string? Description { get; set; }
         public bool IsPublic { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string? UserName { get; set; }
     }
 
     public class CreateTemuLinkDto
