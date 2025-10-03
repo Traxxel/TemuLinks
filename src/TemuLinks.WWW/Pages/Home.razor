@@ -2,6 +2,7 @@
 @using TemuLinks.WWW.Services
 @using TemuLinks.WWW.Models
 @inject IAuthService AuthService
+@inject IJSRuntime JS
 @inject NavigationManager Navigation
 
 <PageTitle>TemuLinks - Home</PageTitle>
@@ -29,8 +30,24 @@
                         <div class="card">
                             <div class="card-body">
                                 <h5 class="card-title">Browser-Plugin</h5>
-                                <p class="card-text">Installiere das Chrome-Plugin für einfaches Speichern</p>
-                                <button class="btn btn-secondary" disabled>Bald verfügbar</button>
+                        <p class="card-text">Installiere das Chrome-Plugin für einfaches Speichern</p>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-secondary" @onclick="GenerateApiKey" disabled="@isGeneratingKey">
+                                @if (isGeneratingKey)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                }
+                                API-Key erzeugen
+                            </button>
+                            @if (!string.IsNullOrEmpty(generatedApiKey))
+                            {
+                                <input class="form-control" value="@generatedApiKey" readonly />
+                            }
+                        </div>
+                        @if (!string.IsNullOrEmpty(apiKeyError))
+                        {
+                            <div class="alert alert-danger mt-2" role="alert">@apiKeyError</div>
+                        }
                             </div>
                         </div>
                     </div>
@@ -105,6 +122,26 @@ else
     private LoginModel loginModel = new();
     private string errorMessage = string.Empty;
     private bool isLoading = false;
+    private bool isGeneratingKey = false;
+    private string generatedApiKey = string.Empty;
+    private string apiKeyError = string.Empty;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var storedKey = await JS.InvokeAsync<string>("localStorage.getItem", "temulinks_api_key");
+                if (!string.IsNullOrWhiteSpace(storedKey))
+                {
+                    generatedApiKey = storedKey;
+                    StateHasChanged();
+                }
+            }
+            catch { }
+        }
+    }
 
     private async Task HandleLogin()
     {
@@ -140,5 +177,48 @@ else
             isLoading = false;
             Console.WriteLine("=== HandleLogin END ===");
         }
+    }
+
+    private async Task GenerateApiKey()
+    {
+        isGeneratingKey = true;
+        apiKeyError = string.Empty;
+        generatedApiKey = string.Empty;
+        StateHasChanged();
+
+        try
+        {
+            using var http = new HttpClient { BaseAddress = new Uri("http://localhost:5002/") };
+            var payload = new { userEmail = $"{AuthService.Username ?? "admin"}@temulinks.local" };
+            var response = await http.PostAsJsonAsync("api/apikeys/generate", payload);
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadFromJsonAsync<GenerateApiKeyResponse>();
+                generatedApiKey = json?.ApiKey ?? string.Empty;
+                if (!string.IsNullOrEmpty(generatedApiKey))
+                {
+                    await JS.InvokeVoidAsync("localStorage.setItem", "temulinks_api_key", generatedApiKey);
+                }
+            }
+            else
+            {
+                apiKeyError = $"Fehler beim Erzeugen des API-Keys: {(int)response.StatusCode} {response.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            apiKeyError = ex.Message;
+        }
+        finally
+        {
+            isGeneratingKey = false;
+        }
+    }
+
+    private class GenerateApiKeyResponse
+    {
+        public string ApiKey { get; set; } = string.Empty;
+        public int UserId { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 }

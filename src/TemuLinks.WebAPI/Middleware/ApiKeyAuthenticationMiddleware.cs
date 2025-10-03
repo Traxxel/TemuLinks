@@ -18,7 +18,8 @@ namespace TemuLinks.WebAPI.Middleware
             if (context.Request.Path.StartsWithSegments("/api/temulinks/public") ||
                 context.Request.Path.StartsWithSegments("/swagger") ||
                 context.Request.Path.StartsWithSegments("/health") ||
-                context.Request.Path.StartsWithSegments("/api/health"))
+                context.Request.Path.StartsWithSegments("/api/health") ||
+                context.Request.Path.StartsWithSegments("/api/apikeys/generate"))
             {
                 await _next(context);
                 return;

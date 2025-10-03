@@ -3,13 +3,8 @@
   "name": "TemuLinks",
   "version": "1.0.0",
   "description": "Save Temu links to your personal collection",
-  "permissions": [
-    "storage",
-    "activeTab"
-  ],
-  "host_permissions": [
-    "https://temu.com/*"
-  ],
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": ["http://*/*", "https://*/*"],
   "content_scripts": [
     {
       "matches": ["https://temu.com/*"],
