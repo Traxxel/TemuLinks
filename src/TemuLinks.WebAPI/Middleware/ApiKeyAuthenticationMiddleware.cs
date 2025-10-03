@@ -17,7 +17,8 @@ namespace TemuLinks.WebAPI.Middleware
             // Skip authentication for public endpoints
             if (context.Request.Path.StartsWithSegments("/api/temulinks/public") ||
                 context.Request.Path.StartsWithSegments("/swagger") ||
-                context.Request.Path.StartsWithSegments("/health"))
+                context.Request.Path.StartsWithSegments("/health") ||
+                context.Request.Path.StartsWithSegments("/api/health"))
             {
                 await _next(context);
                 return;

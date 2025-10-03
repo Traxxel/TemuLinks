@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TemuLinks.Web")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a50957e89c39339e4cfad2ed387fb252262ba29b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+91be8a583c9f04c47d7499bbcc1fe93919cd9ea5")]
 [assembly: System.Reflection.AssemblyProductAttribute("TemuLinks.Web")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TemuLinks.Web")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

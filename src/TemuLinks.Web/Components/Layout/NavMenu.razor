@@ -1,6 +1,14 @@
 ﻿<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">TemuLinks</a>
+        @if (AuthService.IsAuthenticated)
+        {
+            <div class="navbar-nav ms-auto">
+                <button class="btn btn-outline-light btn-sm" @onclick="HandleLogout">
+                    <span class="bi bi-box-arrow-right" aria-hidden="true"></span> Abmelden
+                </button>
+            </div>
+        }
     </div>
 </div>
 
@@ -16,4 +24,15 @@
 
     </nav>
 </div>
+
+@code {
+    [Inject] private IAuthService AuthService { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    private async Task HandleLogout()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/", true);
+    }
+}
 

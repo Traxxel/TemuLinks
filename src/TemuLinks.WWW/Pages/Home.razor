@@ -1,0 +1,144 @@
+﻿@page "/"
+@using TemuLinks.WWW.Services
+@using TemuLinks.WWW.Models
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>TemuLinks - Home</PageTitle>
+
+@if (AuthService.IsAuthenticated)
+{
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-8">
+                <h1>Willkommen bei TemuLinks!</h1>
+                <p class="lead">Hallo @AuthService.Username!</p>
+                <p>Hier kannst du deine Temu-Links verwalten und organisieren.</p>
+                
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Meine Links</h5>
+                                <p class="card-text">Verwalte deine gespeicherten Temu-Links</p>
+                                <button class="btn btn-primary" disabled>Bald verfügbar</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Browser-Plugin</h5>
+                                <p class="card-text">Installiere das Chrome-Plugin für einfaches Speichern</p>
+                                <button class="btn btn-secondary" disabled>Bald verfügbar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="text-center mb-0">TemuLinks Login</h3>
+                    </div>
+                    <div class="card-body">
+                        <EditForm Model="loginModel" OnValidSubmit="HandleLogin">
+                            <DataAnnotationsValidator />
+                            
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Benutzername</label>
+                                <InputText id="username" class="form-control" @bind-Value="loginModel.Username" />
+                                <ValidationMessage For="@(() => loginModel.Username)" />
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Passwort</label>
+                                <InputText id="password" type="password" class="form-control" @bind-Value="loginModel.Password" />
+                                <ValidationMessage For="@(() => loginModel.Password)" />
+                            </div>
+                            
+                            <div class="mb-3 form-check">
+                                <InputCheckbox id="rememberMe" class="form-check-input" @bind-Value="loginModel.RememberMe" />
+                                <label class="form-check-label" for="rememberMe">
+                                    Angemeldet bleiben
+                                </label>
+                            </div>
+                            
+                            @if (!string.IsNullOrEmpty(errorMessage))
+                            {
+                                <div class="alert alert-danger" role="alert">
+                                    @errorMessage
+                                </div>
+                            }
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary" disabled="@isLoading">
+                                    @if (isLoading)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                    }
+                                    Anmelden
+                                </button>
+                            </div>
+                        </EditForm>
+                        
+                        <div class="mt-3 text-center">
+                            <small class="text-muted">
+                                Demo: admin / admin
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private LoginModel loginModel = new();
+    private string errorMessage = string.Empty;
+    private bool isLoading = false;
+
+    private async Task HandleLogin()
+    {
+        Console.WriteLine("=== HandleLogin START ===");
+        Console.WriteLine($"Username='{loginModel.Username}', Password='{loginModel.Password}'");
+        
+        isLoading = true;
+        errorMessage = string.Empty;
+        StateHasChanged();
+        
+        try
+        {
+            var success = await AuthService.LoginAsync(loginModel);
+            Console.WriteLine($"Login result: {success}");
+            
+            if (success)
+            {
+                Console.WriteLine("Login successful!");
+                StateHasChanged(); // Update UI to show authenticated state
+            }
+            else
+            {
+                errorMessage = "Ungültige Anmeldedaten. Bitte versuchen Sie es erneut.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Login error: {ex.Message}");
+            errorMessage = "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.";
+        }
+        finally
+        {
+            isLoading = false;
+            Console.WriteLine("=== HandleLogin END ===");
+        }
+    }
+}
