@@ -105,7 +105,6 @@ namespace TemuLinks.DAL.Migrations
                         .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
 
@@ -137,8 +136,7 @@ namespace TemuLinks.DAL.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Email")
-                        .IsUnique();
+                    // Unique-Index auf Email entfernt
 
                     b.HasIndex("Username")
                         .IsUnique();

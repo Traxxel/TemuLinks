@@ -133,7 +133,7 @@
             {
                 if ((int)response.StatusCode == 404)
                 {
-                    apiKeyError = "Benutzer nicht gefunden oder inaktiv. Prüfe die angegebene E-Mail.";
+                    apiKeyError = "Benutzer nicht gefunden oder inaktiv.";
                 }
                 else
                 {
@@ -161,7 +161,6 @@
     private class ProfileDto
     {
         public int Id { get; set; }
-        public string Email { get; set; } = string.Empty;
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
     }

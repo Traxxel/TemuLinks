@@ -12,7 +12,7 @@ namespace TemuLinks.DAL.Entities
 
         [Required]
         [MaxLength(255)]
-        public string Email { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty; // optional: wird nicht mehr verwendet
         
         [Required]
         [MaxLength(255)]

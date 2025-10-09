@@ -1,0 +1,185 @@
+@page "/users"
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject TemuLinks.WWW.Services.IAuthService Auth
+
+<PageTitle>Benutzerverwaltung</PageTitle>
+
+@if (Auth.Role != "Admin")
+{
+    <div class="container mt-4">
+        <div class="alert alert-warning">Zugriff verweigert.</div>
+    </div>
+}
+else
+{
+    <div class="container mt-4">
+        <h3>Benutzer</h3>
+
+        @if (users == null)
+        {
+            <div class="mt-3">Lade...</div>
+        }
+        else if (users.Count == 0)
+        {
+            <div class="mt-3">Keine Benutzer gefunden.</div>
+        }
+        else
+        {
+            <MudTable Items="@users" Dense="true" Hover="true" Striped="true" Class="mt-3">
+                <HeaderContent>
+                    <MudTh>Username</MudTh>
+                    <MudTh>E-Mail</MudTh>
+                    <MudTh>Vorname</MudTh>
+                    <MudTh>Nachname</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.Username</MudTd>
+                    <MudTd>@context.Email</MudTd>
+                    <MudTd>
+                        <MudTextField @bind-Value="context.FirstName" Dense="true" />
+                    </MudTd>
+                    <MudTd>
+                        <MudTextField @bind-Value="context.LastName" Dense="true" />
+                    </MudTd>
+                    <MudTd>
+                        <MudChip Color="@((context.IsActive ? Color.Success : Color.Warning))" Variant="Variant.Filled">
+                            @(context.IsActive ? "Aktiv" : "Inaktiv")
+                        </MudChip>
+                    </MudTd>
+                    <MudTd>
+                        <MudStack Row="true" Spacing="1">
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" Disabled="@context.IsSaving" OnClick="() => SaveUser(context)">Speichern</MudButton>
+                            @if (context.IsActive)
+                            {
+                                <MudButton Variant="Variant.Outlined" Color="Color.Warning" Size="Size.Small" Disabled="@context.IsSaving" OnClick="() => Deactivate(context)">Deaktivieren</MudButton>
+                            }
+                            else
+                            {
+                                <MudButton Variant="Variant.Outlined" Color="Color.Success" Size="Size.Small" Disabled="@context.IsSaving" OnClick="() => Activate(context)">Aktivieren</MudButton>
+                            }
+                        </MudStack>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mt-2">@error</MudAlert>
+        }
+        @if (!string.IsNullOrEmpty(success))
+        {
+            <MudAlert Severity="Severity.Success" Dense="true" Class="mt-2">@success</MudAlert>
+        }
+    </div>
+}
+
+@code {
+    private List<UserItem>? users;
+    private string error = string.Empty;
+    private string success = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        error = string.Empty;
+        success = string.Empty;
+        try
+        {
+            var result = await Http.GetFromJsonAsync<List<UserItem>>("api/users");
+            users = result ?? new List<UserItem>();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private async Task SaveUser(UserItem u)
+    {
+        u.IsSaving = true;
+        error = string.Empty;
+        success = string.Empty;
+        try
+        {
+            var payload = new { u.FirstName, u.LastName };
+            var resp = await Http.PutAsJsonAsync($"api/users/{u.Id}", payload);
+            if (resp.IsSuccessStatusCode)
+            {
+                success = "Gespeichert";
+            }
+            else
+            {
+                error = $"Fehler: {(int)resp.StatusCode} {resp.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            u.IsSaving = false;
+        }
+    }
+
+    private async Task Activate(UserItem u)
+    {
+        await ToggleActive(u, true);
+    }
+
+    private async Task Deactivate(UserItem u)
+    {
+        await ToggleActive(u, false);
+    }
+
+    private async Task ToggleActive(UserItem u, bool active)
+    {
+        u.IsSaving = true;
+        error = string.Empty;
+        success = string.Empty;
+        try
+        {
+            var endpoint = active ? $"api/users/{u.Id}/activate" : $"api/users/{u.Id}/deactivate";
+            var resp = await Http.PostAsync(endpoint, null);
+            if (resp.IsSuccessStatusCode)
+            {
+                u.IsActive = active;
+                success = active ? "Benutzer aktiviert" : "Benutzer deaktiviert";
+            }
+            else
+            {
+                error = $"Fehler: {(int)resp.StatusCode} {resp.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            u.IsSaving = false;
+        }
+    }
+
+    public class UserItem
+    {
+        public int Id { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public bool IsActive { get; set; }
+        public string Role { get; set; } = string.Empty;
+        public bool IsSaving { get; set; }
+    }
+}
+
+
