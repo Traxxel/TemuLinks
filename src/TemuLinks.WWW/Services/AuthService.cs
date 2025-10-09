@@ -8,8 +8,9 @@ namespace TemuLinks.WWW.Services
         private readonly HttpClient _httpClient;
         private bool _isAuthenticated = false;
         private string? _username;
-        private string? _email;
         private string? _jwt;
+        private string? _role;
+        private bool _isActive;
 
         public AuthService(HttpClient httpClient)
         {
@@ -18,8 +19,9 @@ namespace TemuLinks.WWW.Services
 
         public bool IsAuthenticated => _isAuthenticated;
         public string? Username => _username;
-        public string? Email => _email;
         public string? JwtToken => _jwt;
+        public string? Role => _role;
+        public bool IsActive => _isActive;
 
         public async Task<bool> LoginAsync(LoginModel loginModel)
         {
@@ -31,11 +33,26 @@ namespace TemuLinks.WWW.Services
             if (string.IsNullOrWhiteSpace(result?.Token)) return false;
             _jwt = result!.Token;
             _isAuthenticated = true;
-            _email = null;
+            _role = null;
+            _isActive = false;
 
             // Set default Authorization header for all subsequent requests
             _httpClient.DefaultRequestHeaders.Remove("Authorization");
             _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_jwt}");
+
+            try
+            {
+                var profile = await _httpClient.GetFromJsonAsync<ProfileDto>("api/profile/me");
+                if (profile != null)
+                {
+                    _role = profile.Role;
+                    _isActive = profile.IsActive;
+                }
+            }
+            catch
+            {
+                // ignore, profile optional
+            }
             return true;
         }
 
@@ -43,8 +60,9 @@ namespace TemuLinks.WWW.Services
         {
             _isAuthenticated = false;
             _username = null;
-            _email = null;
             _jwt = null;
+            _role = null;
+            _isActive = false;
             _httpClient.DefaultRequestHeaders.Remove("Authorization");
             return Task.CompletedTask;
         }
@@ -52,6 +70,15 @@ namespace TemuLinks.WWW.Services
         private class LoginResponse
         {
             public string Token { get; set; } = string.Empty;
+        }
+
+        private class ProfileDto
+        {
+            public int Id { get; set; }
+            public string? FirstName { get; set; }
+            public string? LastName { get; set; }
+            public string Role { get; set; } = string.Empty;
+            public bool IsActive { get; set; }
         }
     }
 }

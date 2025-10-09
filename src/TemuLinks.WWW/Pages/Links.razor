@@ -1,90 +1,62 @@
-@page "/links"
+@page "/meine-links"
 @inject TemuLinks.WWW.Services.ITemuLinksApiClient Api
+@inject IJSRuntime JS
 
 <PageTitle>Meine Links</PageTitle>
 
 <div class="container-fluid mt-4">
     <h3>Meine Links</h3>
 
-    <div class="mb-3">
-        <button class="btn btn-outline-primary me-2" @onclick="LoadCount">Anzahl laden</button>
+    <div class="mb-3 d-flex align-items-center gap-2">
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="LoadCount">Anzahl laden</MudButton>
         @if (linkCount.HasValue)
         {
-            <span class="badge bg-secondary">@linkCount.Value Links</span>
+            <MudChip Color="Color.Secondary" Variant="Variant.Filled">@linkCount.Value Links</MudChip>
         }
     </div>
-
-    <EditForm Model="createModel" OnValidSubmit="CreateLink">
-        <DataAnnotationsValidator />
-        <div class="row g-2 align-items-end">
-            <div class="col-md-5">
-                <label class="form-label">URL</label>
-                <InputText class="form-control" @bind-Value="createModel.Url" />
-            </div>
-            <div class="col-md-5">
-                <label class="form-label">Beschreibung</label>
-                <InputText class="form-control" @bind-Value="createModel.Description" />
-            </div>
-            <div class="col-md-1 form-check">
-                <InputCheckbox class="form-check-input" @bind-Value="createModel.IsPublic" />
-                <label class="form-check-label">Öffentlich</label>
-            </div>
-            <div class="col-md-1">
-                <button type="submit" class="btn btn-primary">Speichern</button>
-            </div>
-        </div>
-    </EditForm>
-
     <hr />
 
-    <div class="table-responsive">
-        <table class="table table-striped w-100">
-            <thead>
-                <tr>
-                    <th>Datum</th>
-                    <th>Vorname</th>
-                    <th></th>
-                    <th>Beschreibung</th>
-                    <th>Öffentlich</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (links == null)
-                {
-                    <tr><td colspan="5">Noch keine Daten. Klicke auf "Anzahl laden" oder speichere einen Link.</td></tr>
-                }
-                else
-                {
-                    @foreach (var l in links)
-                    {
-                        <tr>
-                            <td style="white-space:nowrap;">
-                                <div>@l.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy")</div>
-                                <div class="text-muted" style="font-size:0.9em;">@l.CreatedAt.ToLocalTime().ToString("HH:mm")</div>
-                            </td>
-                            <td>@(GetFirstName(l.UserName))</td>
-                            <td>
-                                <a href="@l.Url" target="_blank" title="Webseite öffnen" class="text-decoration-none">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z"/>
-                                        <path d="M5 5h5V3H3v7h2V5zm0 14v-5H3v7h7v-2H5z"/>
-                                    </svg>
-                                </a>
-                            </td>
-                            <td>@l.Description</td>
-                            <td>@(l.IsPublic ? "Ja" : "Nein")</td>
-                        </tr>
-                    }
-                }
-            </tbody>
-        </table>
-    </div>
+    @if (links == null)
+    {
+        <div>Noch keine Daten. Klicke auf "Anzahl laden".</div>
+    }
+    else
+    {
+        <MudTable Items="@links" Dense="true" Hover="true" Striped="true">
+            <HeaderContent>
+                <MudTh></MudTh>
+                <MudTh>Datum</MudTh>
+                <MudTh>Vorname</MudTh>
+                <MudTh></MudTh>
+                <MudTh>Beschreibung</MudTh>
+                <MudTh>Öffentlich</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>
+                    <MudIconButton Color="Color.Error" Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="() => ConfirmDelete(context)" />
+                </MudTd>
+                <MudTd>
+                    <div>@context.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy")</div>
+                    <div class="text-muted" style="font-size:0.9em;">@context.CreatedAt.ToLocalTime().ToString("HH:mm")</div>
+                </MudTd>
+                <MudTd>@(GetFirstName(context.UserName))</MudTd>
+                <MudTd>
+                    <MudIconButton Color="Color.Default" Icon="@Icons.Material.Filled.OpenInNew" Size="Size.Small" Href="@context.Url" Target="_blank" />
+                </MudTd>
+                <MudTd>@context.Description</MudTd>
+                <MudTd>
+                    <MudSwitch TValue="bool" Checked="@context.IsPublic"
+                               CheckedChanged="@(async (bool val) => { context.IsPublic = val; await TogglePublic(context); })"
+                               Color="Color.Primary" Immediate="true" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
 </div>
 
 @code {
     private List<TemuLinks.WWW.Models.TemuLinkDto>? links;
     private int? linkCount;
-    private TemuLinks.WWW.Models.CreateTemuLinkDto createModel = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -115,13 +87,32 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task CreateLink()
+    // Manuelle Link-Erfassung entfernt
+
+    private async Task ConfirmDelete(TemuLinks.WWW.Models.TemuLinkDto l)
     {
-        var created = await Api.CreateLinkAsync(createModel);
-        if (created != null)
+        var really = await JS.InvokeAsync<bool>("confirm", $"Link wirklich löschen?\n{l.Description}");
+        if (!really) return;
+        var ok = await Api.DeleteLinkAsync(l.Id);
+        if (ok)
         {
-            createModel = new();
             await LoadCount();
+        }
+    }
+
+    private async Task TogglePublic(TemuLinks.WWW.Models.TemuLinkDto l)
+    {
+        var dto = new TemuLinks.WWW.Models.UpdateTemuLinkDto
+        {
+            Description = l.Description,
+            IsPublic = l.IsPublic
+        };
+        var updated = await Api.UpdateLinkAsync(l.Id, dto);
+        if (updated == null)
+        {
+            // revert on failure
+            l.IsPublic = !l.IsPublic;
+            await InvokeAsync(StateHasChanged);
         }
     }
 

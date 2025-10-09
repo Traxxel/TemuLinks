@@ -8,7 +8,10 @@ namespace TemuLinks.WWW.Services
     {
         Task<int?> GetLinkCountAsync(CancellationToken cancellationToken = default);
         Task<List<TemuLinkDto>?> GetLinksAsync(CancellationToken cancellationToken = default);
+        Task<List<TemuLinkDto>?> GetPublicLinksAsync(CancellationToken cancellationToken = default);
         Task<TemuLinkDto?> CreateLinkAsync(CreateTemuLinkDto dto, CancellationToken cancellationToken = default);
+        Task<bool> DeleteLinkAsync(int id, CancellationToken cancellationToken = default);
+        Task<TemuLinkDto?> UpdateLinkAsync(int id, UpdateTemuLinkDto dto, CancellationToken cancellationToken = default);
     }
 
     public class TemuLinksApiClient : ITemuLinksApiClient
@@ -24,20 +27,15 @@ namespace TemuLinks.WWW.Services
             _authService = authService;
         }
 
-        private async Task<bool> EnsureApiKeyAsync()
+        private async Task EnsureApiKeyAsync()
         {
             var apiKey = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "temulinks_api_key");
-            if (string.IsNullOrWhiteSpace(apiKey))
-            {
-                return false;
-            }
-
+            if (string.IsNullOrWhiteSpace(apiKey)) return;
             if (_httpClient.DefaultRequestHeaders.Contains("X-API-Key"))
             {
                 _httpClient.DefaultRequestHeaders.Remove("X-API-Key");
             }
             _httpClient.DefaultRequestHeaders.Add("X-API-Key", apiKey);
-            return true;
         }
 
         private void EnsureBearer()
@@ -52,7 +50,7 @@ namespace TemuLinks.WWW.Services
         public async Task<int?> GetLinkCountAsync(CancellationToken cancellationToken = default)
         {
             EnsureBearer();
-            if (!await EnsureApiKeyAsync()) return null;
+            await EnsureApiKeyAsync();
             var response = await _httpClient.GetAsync("api/temulinks/count", cancellationToken);
             if (!response.IsSuccessStatusCode) return null;
             var dto = await response.Content.ReadFromJsonAsync<TemuLinkCountDto>(cancellationToken: cancellationToken);
@@ -62,15 +60,38 @@ namespace TemuLinks.WWW.Services
         public async Task<List<TemuLinkDto>?> GetLinksAsync(CancellationToken cancellationToken = default)
         {
             EnsureBearer();
-            if (!await EnsureApiKeyAsync()) return null;
+            await EnsureApiKeyAsync();
             return await _httpClient.GetFromJsonAsync<List<TemuLinkDto>>("api/temulinks", cancellationToken);
+        }
+
+        public async Task<List<TemuLinkDto>?> GetPublicLinksAsync(CancellationToken cancellationToken = default)
+        {
+            // Öffentliche Liste benötigt keinen JWT und keinen API-Key
+            return await _httpClient.GetFromJsonAsync<List<TemuLinkDto>>("api/temulinks/public", cancellationToken);
         }
 
         public async Task<TemuLinkDto?> CreateLinkAsync(CreateTemuLinkDto dto, CancellationToken cancellationToken = default)
         {
             EnsureBearer();
-            if (!await EnsureApiKeyAsync()) return null;
+            await EnsureApiKeyAsync();
             var response = await _httpClient.PostAsJsonAsync("api/temulinks", dto, cancellationToken);
+            if (!response.IsSuccessStatusCode) return null;
+            return await response.Content.ReadFromJsonAsync<TemuLinkDto>(cancellationToken: cancellationToken);
+        }
+
+        public async Task<bool> DeleteLinkAsync(int id, CancellationToken cancellationToken = default)
+        {
+            EnsureBearer();
+            await EnsureApiKeyAsync();
+            var response = await _httpClient.DeleteAsync($"api/temulinks/{id}", cancellationToken);
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<TemuLinkDto?> UpdateLinkAsync(int id, UpdateTemuLinkDto dto, CancellationToken cancellationToken = default)
+        {
+            EnsureBearer();
+            await EnsureApiKeyAsync();
+            var response = await _httpClient.PutAsJsonAsync($"api/temulinks/{id}", dto, cancellationToken);
             if (!response.IsSuccessStatusCode) return null;
             return await response.Content.ReadFromJsonAsync<TemuLinkDto>(cancellationToken: cancellationToken);
         }

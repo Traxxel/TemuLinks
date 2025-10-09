@@ -28,7 +28,8 @@ namespace TemuLinks.WebAPI.Middleware
                 context.Request.Path.StartsWithSegments("/api/health") ||
                 context.Request.Path.StartsWithSegments("/api/apikeys/generate") ||
                 context.Request.Path.StartsWithSegments("/api/auth/dev-check") ||
-                context.Request.Path.StartsWithSegments("/api/auth/login"))
+                context.Request.Path.StartsWithSegments("/api/auth/login") ||
+                context.Request.Path.StartsWithSegments("/api/auth/register"))
             {
                 await _next(context);
                 return;

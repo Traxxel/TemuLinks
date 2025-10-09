@@ -21,6 +21,12 @@ namespace TemuLinks.WWW.Models
     {
         public int Count { get; set; }
     }
+
+    public class UpdateTemuLinkDto
+    {
+        public string? Description { get; set; }
+        public bool IsPublic { get; set; }
+    }
 }
 
 

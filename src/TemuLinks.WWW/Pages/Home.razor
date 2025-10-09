@@ -14,7 +14,7 @@
         <div class="row">
             <div class="col-md-8">
                 <h1>Willkommen bei TemuLinks!</h1>
-                <p class="lead">Hallo @AuthService.Email!</p>
+                <p class="lead">Hallo @AuthService.Username!</p>
                 <p>Hier kannst du deine Temu-Links verwalten und organisieren.</p>
                 
                 <div class="row mt-4">
@@ -106,8 +106,9 @@ else
                                 </button>
                             </div>
                         </EditForm>
-                        
-                        
+                        <div class="text-center mt-3">
+                            <a href="/register" class="btn btn-outline-secondary">Neu registrieren</a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -157,8 +158,8 @@ else
             if (success)
             {
                 Console.WriteLine("Login successful!");
-                // Nach erfolgreichem Login zur Links-Seite navigieren
-                Navigation.NavigateTo("/links", forceLoad: false);
+                // Nach erfolgreichem Login zur Seite "Meine Links" navigieren
+                Navigation.NavigateTo("/meine-links", forceLoad: false);
                 StateHasChanged();
             }
             else

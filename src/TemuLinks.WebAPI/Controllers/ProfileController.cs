@@ -19,7 +19,7 @@ namespace TemuLinks.WebAPI.Controllers
             _db = db;
         }
 
-        public record ProfileDto(int Id, string Email, string? FirstName, string? LastName);
+        public record ProfileDto(int Id, string? FirstName, string? LastName, string Role, bool IsActive);
         public record UpdateProfileRequest(string? FirstName, string? LastName);
 
         private int GetUserId()
@@ -51,17 +51,10 @@ namespace TemuLinks.WebAPI.Controllers
                 ? await _db.Users.FirstOrDefaultAsync(u => u.Id == userId)
                 : null;
 
-            if (user == null)
-            {
-                var email = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
-                if (!string.IsNullOrEmpty(email))
-                {
-                    user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
-                }
-            }
+            // Keine Fallback-Suche per Email mehr
 
             if (user == null) return NotFound();
-            return new ProfileDto(user.Id, user.Email, user.FirstName, user.LastName);
+            return new ProfileDto(user.Id, user.FirstName, user.LastName, user.Role, user.IsActive);
         }
 
         [HttpPut("me")]
@@ -72,14 +65,7 @@ namespace TemuLinks.WebAPI.Controllers
                 ? await _db.Users.FirstOrDefaultAsync(u => u.Id == userId)
                 : null;
 
-            if (user == null)
-            {
-                var email = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
-                if (!string.IsNullOrEmpty(email))
-                {
-                    user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
-                }
-            }
+            // Keine Fallback-Suche per Email mehr
 
             if (user == null) return NotFound();
 
