@@ -1,0 +1,1 @@
+rsync --recursive --checksum --verbose * root@ebcsrv11.ebc.rocks:/var/www/temulinks/API

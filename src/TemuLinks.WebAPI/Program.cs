@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using TemuLinks.DAL;
-using Pomelo.EntityFrameworkCore.MySql;
 using TemuLinks.WebAPI.Services;
 using TemuLinks.WebAPI.Middleware;
 using TemuLinks.DAL.Entities;
@@ -40,8 +39,7 @@ builder.Services.AddAuthentication(options =>
 
 // Add Entity Framework
 builder.Services.AddDbContext<TemuLinksDbContext>(options =>
-    options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"), 
-        new MySqlServerVersion(new Version(8, 0, 21))));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add Services
 builder.Services.AddScoped<ITemuLinkService, TemuLinkService>();
@@ -59,6 +57,47 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// DB reachability check and initial admin seeding
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var logger = app.Logger;
+    try
+    {
+        var db = services.GetRequiredService<TemuLinksDbContext>();
+        var canConnect = db.Database.CanConnect();
+        if (!canConnect)
+        {
+            logger.LogError("[Startup] Database is NOT reachable. Check connection string and server availability.");
+        }
+        else
+        {
+            if (!db.Users.Any())
+            {
+                logger.LogInformation("[Startup] No users found. Seeding initial admin user.");
+                var admin = new User
+                {
+                    Username = "admin",
+                    Email = "admin@local",
+                    PasswordHash = PasswordHasher.HashPassword("admin"),
+                    FirstName = "Admin",
+                    LastName = "User",
+                    IsActive = true,
+                    Role = "Admin",
+                    CreatedAt = DateTime.UtcNow
+                };
+                db.Users.Add(admin);
+                db.SaveChanges();
+                logger.LogInformation("[Startup] Admin user created (username: 'admin').");
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "[Startup] Failed to check database connectivity or seed admin user.");
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
