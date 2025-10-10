@@ -39,6 +39,46 @@
     <hr />
 
     <div>
+        <h5>Passwort ändern</h5>
+        <EditForm Model="this" OnValidSubmit="ChangePassword">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Aktuelles Passwort</label>
+                    <InputText type="password" class="form-control" @bind-Value="currentPassword" />
+                </div>
+                <div class="col-md-6"></div>
+                <div class="col-md-6">
+                    <label class="form-label">Neues Passwort</label>
+                    <InputText type="password" class="form-control" @bind-Value="newPassword" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Neues Passwort bestätigen</label>
+                    <InputText type="password" class="form-control" @bind-Value="confirmPassword" />
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary" disabled="@isChangingPassword">
+                        @if (isChangingPassword)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        }
+                        Passwort ändern
+                    </button>
+                    @if (!string.IsNullOrEmpty(passwordError))
+                    {
+                        <span class="ms-2 text-danger">@passwordError</span>
+                    }
+                    @if (!string.IsNullOrEmpty(passwordSuccess))
+                    {
+                        <span class="ms-2 text-success">@passwordSuccess</span>
+                    }
+                </div>
+            </div>
+        </EditForm>
+    </div>
+
+    <hr />
+
+    <div>
         <h5>API-Key</h5>
         <div class="d-flex gap-2 align-items-center">
             <input class="form-control" style="max-width:420px;" value="@apiKey" readonly />
@@ -67,6 +107,13 @@
     private string lastName = string.Empty;
     private bool isSaving = false;
     private string saveMessage = string.Empty;
+
+    private string currentPassword = string.Empty;
+    private string newPassword = string.Empty;
+    private string confirmPassword = string.Empty;
+    private bool isChangingPassword = false;
+    private string passwordError = string.Empty;
+    private string passwordSuccess = string.Empty;
 
     private string apiKey = string.Empty;
     private bool isGeneratingKey = false;
@@ -102,6 +149,70 @@
         finally
         {
             isSaving = false;
+        }
+    }
+
+    private async Task ChangePassword()
+    {
+        isChangingPassword = true;
+        passwordError = string.Empty;
+        passwordSuccess = string.Empty;
+
+        try
+        {
+            // Validierung
+            if (string.IsNullOrWhiteSpace(currentPassword))
+            {
+                passwordError = "Bitte aktuelles Passwort eingeben";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(newPassword))
+            {
+                passwordError = "Bitte neues Passwort eingeben";
+                return;
+            }
+
+            if (newPassword.Length < 4)
+            {
+                passwordError = "Neues Passwort muss mindestens 4 Zeichen lang sein";
+                return;
+            }
+
+            if (newPassword != confirmPassword)
+            {
+                passwordError = "Passwörter stimmen nicht überein";
+                return;
+            }
+
+            // API-Aufruf
+            var response = await Http.PostAsJsonAsync("api/profile/change-password", 
+                new ChangePasswordRequest 
+                { 
+                    CurrentPassword = currentPassword, 
+                    NewPassword = newPassword 
+                });
+
+            if (response.IsSuccessStatusCode)
+            {
+                passwordSuccess = "Passwort erfolgreich geändert";
+                currentPassword = string.Empty;
+                newPassword = string.Empty;
+                confirmPassword = string.Empty;
+            }
+            else
+            {
+                var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                passwordError = error?.Message ?? $"Fehler: {response.StatusCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            passwordError = $"Fehler: {ex.Message}";
+        }
+        finally
+        {
+            isChangingPassword = false;
         }
     }
 
@@ -177,6 +288,17 @@
     {
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
+    }
+
+    private class ChangePasswordRequest
+    {
+        public string CurrentPassword { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+    }
+
+    private class ErrorResponse
+    {
+        public string Message { get; set; } = string.Empty;
     }
 }
 
