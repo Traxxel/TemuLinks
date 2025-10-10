@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using TemuLinks.DAL;
+using TemuLinks.WebAPI.Services;
 
 namespace TemuLinks.WebAPI.Controllers
 {
@@ -21,6 +22,7 @@ namespace TemuLinks.WebAPI.Controllers
 
         public record ProfileDto(int Id, string? FirstName, string? LastName, string Role, bool IsActive);
         public record UpdateProfileRequest(string? FirstName, string? LastName);
+        public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
 
         private int GetUserId()
         {
@@ -73,6 +75,39 @@ namespace TemuLinks.WebAPI.Controllers
             user.LastName = request.LastName;
             await _db.SaveChangesAsync();
             return NoContent();
+        }
+
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.CurrentPassword) || string.IsNullOrWhiteSpace(request.NewPassword))
+            {
+                return BadRequest(new { message = "Aktuelles und neues Passwort sind erforderlich." });
+            }
+
+            if (request.NewPassword.Length < 4)
+            {
+                return BadRequest(new { message = "Neues Passwort muss mindestens 4 Zeichen lang sein." });
+            }
+
+            var userId = GetUserId();
+            var user = userId > 0
+                ? await _db.Users.FirstOrDefaultAsync(u => u.Id == userId)
+                : null;
+
+            if (user == null) return NotFound(new { message = "Benutzer nicht gefunden." });
+
+            // Aktuelles Passwort verifizieren
+            if (!PasswordHasher.VerifyPassword(request.CurrentPassword, user.PasswordHash))
+            {
+                return BadRequest(new { message = "Aktuelles Passwort ist falsch." });
+            }
+
+            // Neues Passwort setzen
+            user.PasswordHash = PasswordHasher.HashPassword(request.NewPassword);
+            await _db.SaveChangesAsync();
+
+            return Ok(new { message = "Passwort erfolgreich geändert." });
         }
     }
 }
