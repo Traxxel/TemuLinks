@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -6,6 +7,7 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using TemuLinks.DAL;
 using TemuLinks.WebAPI.Services;
+using TemuLinks.DAL.Entities;
 
 namespace TemuLinks.WebAPI.Controllers
 {
@@ -26,8 +28,11 @@ namespace TemuLinks.WebAPI.Controllers
 
         public record LoginRequest(string Username, string Password);
         public record LoginResponse(string Token);
+        public record RegisterRequest(string Username, string Password, string? FirstName, string? LastName);
+        public record RegisterResponse(int Id, string Username, bool IsActive);
 
         [HttpPost("login")]
+        [AllowAnonymous]
         public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
         {
             _logger.LogInformation("[Auth] Login attempt for '{Username}'", request.Username);
@@ -52,7 +57,6 @@ namespace TemuLinks.WebAPI.Controllers
             var claims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, string.IsNullOrWhiteSpace(user.Email) ? $"{user.Username}@temulinks.local" : user.Email),
                 new Claim("firstName", user.FirstName ?? string.Empty),
                 new Claim("lastName", user.LastName ?? string.Empty),
                 new Claim(ClaimTypes.Role, user.Role)
@@ -69,6 +73,43 @@ namespace TemuLinks.WebAPI.Controllers
             return Ok(new LoginResponse(tokenString));
         }
 
+        [HttpPost("register")]
+        [AllowAnonymous]
+        public async Task<ActionResult<RegisterResponse>> Register([FromBody] RegisterRequest request)
+        {
+            _logger.LogInformation("[Auth] Register attempt for '{Username}'", request.Username);
+
+            if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
+            {
+                return BadRequest("Username und Password sind erforderlich");
+            }
+
+            var normalizedUsername = request.Username.Trim();
+
+            var exists = await _db.Users.AnyAsync(u => u.Username == normalizedUsername);
+            if (exists)
+            {
+                return Conflict("Username bereits vergeben");
+            }
+
+            var passwordHash = PasswordHasher.HashPassword(request.Password);
+            var user = new User
+            {
+                Username = normalizedUsername,
+                Email = $"{normalizedUsername}@temulinks.local", // technische Füllung für Legacy-DB-Spalte
+                PasswordHash = passwordHash,
+                FirstName = string.IsNullOrWhiteSpace(request.FirstName) ? null : request.FirstName!.Trim(),
+                LastName = string.IsNullOrWhiteSpace(request.LastName) ? null : request.LastName!.Trim(),
+                Role = "User",
+                IsActive = false
+            };
+
+            _db.Users.Add(user);
+            await _db.SaveChangesAsync();
+
+            var response = new RegisterResponse(user.Id, user.Username, user.IsActive);
+            return CreatedAtAction(nameof(Login), new { username = user.Username }, response);
+        }
         
     }
 }

@@ -1,0 +1,142 @@
+@page "/register"
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<PageTitle>Registrieren</PageTitle>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-center mb-0">Neu registrieren</h3>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(success))
+                    {
+                        <div class="alert alert-success" role="alert">@success</div>
+                    }
+                    @if (!string.IsNullOrEmpty(error))
+                    {
+                        <div class="alert alert-danger" role="alert">@error</div>
+                    }
+                    <EditForm Model="model" OnValidSubmit="HandleRegister">
+                        <DataAnnotationsValidator />
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Vorname</label>
+                                <InputText class="form-control" @bind-Value="model.FirstName" />
+                                <ValidationMessage For="@(() => model.FirstName)" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nachname</label>
+                                <InputText class="form-control" @bind-Value="model.LastName" />
+                                <ValidationMessage For="@(() => model.LastName)" />
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <label class="form-label">Benutzername</label>
+                            <InputText class="form-control" @bind-Value="model.Username" />
+                            <ValidationMessage For="@(() => model.Username)" />
+                        </div>
+                        <!-- E-Mail entfernt -->
+                        <div class="mt-3">
+                            <label class="form-label">Passwort</label>
+                            <InputText type="password" class="form-control" @bind-Value="model.Password" />
+                            <ValidationMessage For="@(() => model.Password)" />
+                        </div>
+                        <div class="mt-3">
+                            <label class="form-label">Passwort wiederholen</label>
+                            <InputText type="password" class="form-control" @bind-Value="model.PasswordRepeat" />
+                            <ValidationMessage For="@(() => model.PasswordRepeat)" />
+                        </div>
+                        <div class="d-grid mt-3">
+                            <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                                @if (isSubmitting)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                }
+                                Registrieren
+                            </button>
+                        </div>
+                    </EditForm>
+                    <div class="text-center mt-3">
+                        <a href="/" class="link-secondary">Zurück zum Login</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private RegisterModel model = new();
+    private bool isSubmitting = false;
+    private string success = string.Empty;
+    private string error = string.Empty;
+
+    private async Task HandleRegister()
+    {
+        error = string.Empty;
+        success = string.Empty;
+        if ((model.Password ?? "").Trim() != (model.PasswordRepeat ?? "").Trim())
+        {
+            error = "Passwörter stimmen nicht überein.";
+            return;
+        }
+
+        isSubmitting = true;
+        try
+        {
+            var payload = new { model.Username, model.Password, model.FirstName, model.LastName };
+            var response = await Http.PostAsJsonAsync("api/auth/register", payload);
+            if (response.IsSuccessStatusCode)
+            {
+                success = "Konto angelegt. Ein Administrator muss es aktivieren, bevor du dich anmelden kannst.";
+                model = new();
+            }
+            else if ((int)response.StatusCode == 409)
+            {
+                error = "Benutzername bereits vergeben.";
+            }
+            else
+            {
+                var serverMsg = await response.Content.ReadAsStringAsync();
+                error = $"Fehler: {(int)response.StatusCode} {response.ReasonPhrase}\n{serverMsg}";
+            }
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private class RegisterModel
+    {
+        [System.ComponentModel.DataAnnotations.MaxLength(100)]
+        public string? FirstName { get; set; }
+
+        [System.ComponentModel.DataAnnotations.MaxLength(100)]
+        public string? LastName { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.MaxLength(100)]
+        public string Username { get; set; } = string.Empty;
+
+        // Email vollständig entfernt
+
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.MinLength(4)]
+        public string Password { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.MinLength(4)]
+        public string PasswordRepeat { get; set; } = string.Empty;
+    }
+}
+
+

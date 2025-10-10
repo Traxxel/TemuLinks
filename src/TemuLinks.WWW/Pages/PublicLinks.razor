@@ -1,0 +1,57 @@
+@page "/oeffentliche-links"
+@inject TemuLinks.WWW.Services.ITemuLinksApiClient Api
+
+<PageTitle>Öffentliche Links</PageTitle>
+
+<div class="container-fluid mt-4">
+    <h3>Öffentliche Links</h3>
+
+    @if (links == null)
+    {
+        <div>Lade...</div>
+    }
+    else if (links.Count == 0)
+    {
+        <div>Keine öffentlichen Links vorhanden.</div>
+    }
+    else
+    {
+        <MudTable Items="@links" Dense="true" Hover="true" Striped="true">
+            <HeaderContent>
+                <MudTh>Datum</MudTh>
+                <MudTh>User</MudTh>
+                <MudTh></MudTh>
+                <MudTh>Beschreibung</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>
+                    <div>@context.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy")</div>
+                    <div class="text-muted" style="font-size:0.9em;">@context.CreatedAt.ToLocalTime().ToString("HH:mm")</div>
+                </MudTd>
+                <MudTd>@(GetFirstName(context.UserName))</MudTd>
+                <MudTd>
+                    <MudIconButton Color="Color.Default" Icon="@Icons.Material.Filled.OpenInNew" Size="Size.Small" Href="@context.Url" Target="_blank" />
+                </MudTd>
+                <MudTd>@context.Description</MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+</div>
+
+@code {
+    private List<TemuLinks.WWW.Models.TemuLinkDto>? links;
+
+    protected override async Task OnInitializedAsync()
+    {
+        links = await Api.GetPublicLinksAsync();
+    }
+
+    private string GetFirstName(string? userName)
+    {
+        if (string.IsNullOrWhiteSpace(userName)) return string.Empty;
+        var parts = userName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length > 0 ? parts[0] : userName.Trim();
+    }
+}
+
+
