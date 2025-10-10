@@ -70,3 +70,4 @@ Du musst zuerst deinen API-Endpunkt und API-Schlüssel in den Einstellungen hint
 
 Bei Problemen oder Fragen erstelle bitte ein [Issue auf GitHub](https://github.com/Traxxel/TemuLinks/issues).
 
+
