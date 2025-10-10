@@ -69,10 +69,14 @@ using (var scope = app.Services.CreateScope())
         var canConnect = db.Database.CanConnect();
         if (!canConnect)
         {
-            logger.LogError("[Startup] Database is NOT reachable. Check connection string and server availability.");
+            logger.LogError("[Startup] Database is NOT reachable. Check connection string and server availability." + builder.Configuration.GetConnectionString("DefaultConnection").ToString());
         }
         else
         {
+            logger.LogInformation("[Startup] Running database migrations...");
+            db.Database.Migrate();
+            logger.LogInformation("[Startup] Database migrations completed.");
+            
             if (!db.Users.Any())
             {
                 logger.LogInformation("[Startup] No users found. Seeding initial admin user.");
