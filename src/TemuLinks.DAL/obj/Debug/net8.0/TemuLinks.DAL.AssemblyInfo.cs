@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TemuLinks.DAL")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4d6ae21a6b6f4dfa1d3239d8c64e22cdf6e889b1")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+454ebdba0b9f02e67698a1c3a6fccabd3f697fa2")]
 [assembly: System.Reflection.AssemblyProductAttribute("TemuLinks.DAL")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TemuLinks.DAL")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
